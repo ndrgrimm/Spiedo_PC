@@ -1,0 +1,4 @@
+[Project]
+Name=Spiedo_Pc
+Manager=KDevCMakeManager
+VersionControl=kdevgit
