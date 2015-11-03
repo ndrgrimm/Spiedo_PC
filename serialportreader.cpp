@@ -32,6 +32,7 @@
 ****************************************************************************/
 
 #include "serialportreader.h"
+#include "QtSerialPort/QtSerialPort"
 
 #include <QCoreApplication>
 
@@ -39,9 +40,9 @@ QT_USE_NAMESPACE
 
 SerialPortReader::SerialPortReader(QSerialPort *serialPort, QObject *parent)
     : QObject(parent)
-    , m_serialPort(serialPort)
-    , m_standardOutput(stdout)
 {
+  
+    m_serialPort=serialPort;
     connect(m_serialPort, SIGNAL(readyRead()), SLOT(handleReadyRead()));
     connect(m_serialPort, SIGNAL(error(QSerialPort::SerialPortError)), SLOT(handleError(QSerialPort::SerialPortError)));
     connect(&m_timer, SIGNAL(timeout()), SLOT(handleTimeout()));
@@ -63,10 +64,12 @@ void SerialPortReader::handleReadyRead()
 
 void SerialPortReader::handleTimeout()
 {
+  
+    m_standardOutput << QObject::tr("Timer expired.") << endl;
     if (m_readData.isEmpty()) {
-        m_standardOutput << QObject::tr("No data was currently available for reading from port %1").arg(m_serialPort->portName()) << endl;
+        m_standardOutput << QObject::tr(" No data was currently available for reading from port %1").arg(m_serialPort->portName()) << endl;
     } else {
-        m_standardOutput << QObject::tr("Data successfully received from port %1").arg(m_serialPort->portName()) << endl;
+        m_standardOutput << QObject::tr(" Data successfully received from port %1").arg(m_serialPort->portName()) << endl;
         m_standardOutput << m_readData << endl;
     }
 

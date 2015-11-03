@@ -3,9 +3,9 @@
 #include <QtSerialPort/QSerialPortInfo>
 
 
-QSerialPort* Collegamento(){
+QSerialPort* Connection(){
   
-  
+    
     QList<QSerialPortInfo> ListaSeriali_info = QSerialPortInfo::availablePorts();
     QTextStream out(stdout);
     QTextStream in(stdin);
@@ -15,8 +15,11 @@ QSerialPort* Collegamento(){
     QString serialNumber;	
 
     out << QObject::tr("Numero di seriali presenti: ") << ListaSeriali_info.count() << endl;
-    //if (ListaSeriali_info.count() == 0 ) return 0;
-    
+    if (ListaSeriali_info.count() == 0 ){
+      out << QObject::tr("Arriverderci e grazie per tutto il pesce.") << endl;
+      //QCoreApplication::exit(); //FIXIT: sistemare questo punto studiando bene QTApplication
+      return 0;
+    }
     unsigned int numberOfSerial=0;
     foreach(const QSerialPortInfo &Seriale_info, ListaSeriali_info){
       
@@ -37,13 +40,47 @@ QSerialPort* Collegamento(){
     
     }
     unsigned int indexSerial=0;
-    out << QObject::tr("Quale Seriale Vuoi>>") << endl;
+    do {
+    out << QObject::tr("Seleziona Seriale>>") << flush;
     in >> indexSerial;
     
+    }while(indexSerial >= ListaSeriali_info.count());
+    QSerialPort * tmp=new QSerialPort(ListaSeriali_info.at(indexSerial).systemLocation());
+    // Load Arduino conf
+   // tmp->setReadBufferSize(0);
     
     
-    
-    return &ListaSeriali_info.at(indexSerial);
+    return tmp;
     
     
 }
+
+
+
+void ConfigurePort(QSerialPort *ToConfigure, _IO_FILE *out = stdout,
+		   _IO_FILE *in = stdin){
+   
+    QTextStream std_out(out);
+    QTextStream std_in(in);
+    unsigned int baud=0;
+    int ListBaud[]={9600, 115200};
+    do {
+    std_out << QObject::tr("Seleziona buad:") << endl
+	<< QObject::tr("[0] 9600") << endl 
+	<< QObject::tr("[1] 115200") << endl
+	<< QObject::tr(">>") << flush
+	;
+    std_in >> baud;
+    }while( baud >=2);
+    
+    ToConfigure->setBaudRate(ListBaud[baud]);
+    std_in >> baud;
+    ToConfigure->setDataBits(QSerialPort::Data8);
+    std_in >> baud;
+    ToConfigure->setParity(QSerialPort::NoParity);
+    std_in >> baud;
+    ToConfigure->setStopBits(QSerialPort::OneStop); 
+    std_in >> baud;
+    ToConfigure->setFlowControl(QSerialPort::NoFlowControl); 
+  
+  }

@@ -21,11 +21,13 @@ cmake_minimum_required(VERSION 2.8.11 )
 project(spiedo_pc)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC_MOC_OPTIONS ON)
 
 find_package(Qt5Core REQUIRED)
 find_package(Qt5SerialPort REQUIRED)
 
-add_executable(spiedo_pc main.cpp)
+add_executable(spiedo_pc main.cpp )
 
-target_link_libraries(spiedo_pc Qt5::Core Qt5::SerialPort)
+
+target_link_libraries(spiedo_pc Qt5::Core Qt5::SerialPort )
 
