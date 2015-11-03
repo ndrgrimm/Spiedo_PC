@@ -35,13 +35,13 @@ QSerialPort* Connection(){
           << QObject::tr("Serial number: ") << (!serialNumber.isEmpty() ? serialNumber : blankString) << endl
           << QObject::tr("Vendor Identifier: ") << (Seriale_info.hasVendorIdentifier() ? QByteArray::number(Seriale_info.vendorIdentifier(), 16) : blankString) << endl
           << QObject::tr("Product Identifier: ") << (Seriale_info.hasProductIdentifier() ? QByteArray::number(Seriale_info.productIdentifier(), 16) : blankString) << endl
-          << QObject::tr("Busy: ") << (Seriale_info.isBusy() ? QObject::tr("Yes") : QObject::tr("No")) << endl;
+          << QObject::tr("Busy: ") << (Seriale_info.isBusy() ? QObject::tr("Yes") : QObject::tr("No")) << endl << endl;
       numberOfSerial++;
     
     }
     unsigned int indexSerial=0;
     do {
-    out << QObject::tr("Seleziona Seriale>>") << flush;
+    out << QObject::tr("Seleziona Seriale.\n>>") << flush;
     in >> indexSerial;
     
     }while(indexSerial >= ListaSeriali_info.count());
@@ -74,13 +74,13 @@ void ConfigurePort(QSerialPort *ToConfigure, _IO_FILE *out = stdout,
     }while( baud >=2);
     
     ToConfigure->setBaudRate(ListBaud[baud]);
-    std_in >> baud;
+ 
     ToConfigure->setDataBits(QSerialPort::Data8);
-    std_in >> baud;
+ 
     ToConfigure->setParity(QSerialPort::NoParity);
-    std_in >> baud;
+ 
     ToConfigure->setStopBits(QSerialPort::OneStop); 
-    std_in >> baud;
+   
     ToConfigure->setFlowControl(QSerialPort::NoFlowControl); 
   
   }
