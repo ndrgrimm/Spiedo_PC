@@ -11,11 +11,18 @@ int main(int argc, char** argv){
   
   
   QCoreApplication app(argc, argv);
+  QDateTime logTime=QDateTime::currentDateTime();
+  
+  
   QTextStream standard_out(stdout);
   QTextStream standard_in(stdin);
   QTextStream file_out(stdout);
+  QFile logFile(".spiedo.log");
+  logFile.open(QIODevice::WriteOnly|QIODevice::Append);
+  QTextStream log_out(&logFile);
+  log_out << QObject::tr("####### - %1 - #######").arg( logTime.toString() )<< endl;
   
-  QDateTime logTime=QDateTime::currentDateTime();
+  
   
   
   QSerialPort * SerialSelected=Connection();
@@ -23,7 +30,11 @@ int main(int argc, char** argv){
   ConfigurePort(SerialSelected);
   
   standard_out << QObject::tr("Serial is Configured") << endl;
-
+  
+  
+  
+  
+  
   if( !SerialSelected->open(QIODevice::ReadWrite) ) {
     standard_out << QObject::tr(" Failed to open port %1, error: %2").arg(SerialSelected->portName()).arg(SerialSelected->errorString()) << endl;
     return 1;
@@ -46,7 +57,10 @@ int main(int argc, char** argv){
   SerialSelected->setRequestToSend(true);
   SerialSelected->setRequestToSend(false);
 
-                                                                                 
+         
+  
+  QThread::sleep(2);
+  
   char buf[64];                                                                    
   qint64 leghtbuf=0;
   while( ( SerialSelected->waitForReadyRead(10000) ) ){
@@ -84,7 +98,9 @@ int main(int argc, char** argv){
   
   
   QByteArray Data;
+  QByteArray dataBuffer;
   QString nameFile;
+  QFile LogMisure;
   char command=' ';
   bool exit=false;
   
@@ -111,8 +127,10 @@ int main(int argc, char** argv){
     
 	  if( SerialSelected->canReadLine() ){
 	   
-	    standard_out << SerialSelected->readAll() << flush;
-	    
+	    dataBuffer = SerialSelected->readAll();
+	    standard_out << dataBuffer << flush;
+	    log_out << QObject::tr("[r]:\n") << dataBuffer << flush;
+	    dataBuffer.clear();
 	    break;
 	  }
 	}
@@ -130,6 +148,9 @@ int main(int argc, char** argv){
 	SerialSelected->flush();
 	SerialSelected->readAll();
 	break;
+	
+	
+	
       case 'a':
         SerialSelected->write("a");
 	SerialSelected->flush();
@@ -152,7 +173,16 @@ int main(int argc, char** argv){
 	standard_out << QObject::tr("Nome del file: ") << flush;
 	
 	standard_in >> nameFile;
+	LogMisure.setFileName(nameFile);
+	LogMisure.open(QIODevice::WriteOnly|QIODevice::Append);
+	log_out << QObject::tr("Saving data in %1/ \b%2").arg( QDir::currentPath() ).arg( LogMisure.fileName() )  << endl;
+
+	file_out.setDevice(&LogMisure);
+	
+	
 	file_out << Data << flush;
+	file_out.device()->close();
+	Data.clear();
 	break;
 	
 	
