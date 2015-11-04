@@ -28,7 +28,7 @@ void setup() {
   pinMode(led_read, OUTPUT);
   pinMode(led_auto, OUTPUT);
   pinMode(led_menu, OUTPUT);
-//   pinMode(PWM_pin, OUTPUT);
+  pinMode(PWM_pin, OUTPUT);
   
   digitalWrite(led_write,HIGH);
   digitalWrite(led_read,HIGH);
@@ -209,12 +209,17 @@ void establishContact(const char *SketchCode) {
 
 void SetPWM(int dutyCicle, int time){
   
-  analogWrite(PWM_pin,dutyCicle);
- // digitalWrite(PWM_pin,HIGH);      //
- // delay(1000);            // TEST: Togliere e mettere la riga prima
- // digitalWrite(PWM_pin,LOW);       //
- // delay(time);
-
+  //analogWrite(PWM_pin,dutyCicle);
+  
+  boolean setHIGH=false;
+  if( digitalRead(led_write) == HIGH ) setHIGH=true;
+  for(int i=0; i <5 ;++i){
+  digitalWrite(led_write,HIGH);      //
+  delay(200);
+  digitalWrite(led_write,LOW);       //
+  delay(200); 
+  }
+  if( setHIGH ) digitalWrite(led_write,HIGH);
 
 }
 
