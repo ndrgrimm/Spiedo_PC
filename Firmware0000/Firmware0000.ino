@@ -12,18 +12,19 @@ const int led_read =  12;
 const int led_auto =  11;
 const int led_menu =  9;
 
-
-
 const int Sample_length=1000;
-void ReadData(double &_Mean, double &_MeanMean);
+void ReadData(double &_Mean, double &_Sigma);
 const int PWM_pin=10;
-
+void setPwmFrequency(int pin, int divisor);
 
 void establishContact(const char *SketchCode);
 void SetPWM(int dutyCicle, int time=1000);
 // the setup routine runs once when you press reset:
 void setup() {                
   // initialize the digital pin as an output.
+  //setPwmFrequency(PWM_pin,2);
+  analogReference(EXTERNAL);
+
   pinMode(led_write, OUTPUT);   
   pinMode(led_read, OUTPUT);
   pinMode(led_auto, OUTPUT);
@@ -70,9 +71,9 @@ void loop() {
   
   double Sample;
   double Mean;
-  double MeanMean;
+  double Sigma;
   boolean exit=false;
-  establishContact("Test0000");
+  establishContact("TestPiezo");
   digitalWrite(led_menu,HIGH);
   while(true){
     
@@ -113,12 +114,12 @@ void loop() {
           
          case 'r':
            digitalWrite(led_read,HIGH);
-           ReadData(Mean, MeanMean);           
+           ReadData(Mean, Sigma);           
            Serial.print(duty);
            Serial.print(":");
            Serial.print(Mean);
            Serial.print(":");
-           Serial.print(MeanMean);
+           Serial.print(Sigma);
            Serial.print("#");
            Serial.println();
            delay(500);
@@ -126,16 +127,16 @@ void loop() {
            break;
          case 'a':
            digitalWrite(led_auto,HIGH);
-           for(int duty =0; duty<256; ++duty){
+           for(int duty =0; duty<256; duty+=2){
              
              SetPWM(duty);
-             ReadData(Mean, MeanMean);           
+             ReadData(Mean, Sigma);           
              digitalWrite(led_read,HIGH);
              Serial.print(duty);
              Serial.print(":");
              Serial.print(Mean);
              Serial.print(":");
-             Serial.print(MeanMean);
+             Serial.print(Sigma);
              Serial.print("#");
              Serial.println();
              delay(200);
@@ -209,7 +210,7 @@ void establishContact(const char *SketchCode) {
 
 void SetPWM(int dutyCicle, int time){
   
-  //analogWrite(PWM_pin,dutyCicle);
+  analogWrite(PWM_pin,dutyCicle);
   
   boolean setHIGH=false;
   if( digitalRead(led_write) == HIGH ) setHIGH=true;
@@ -223,15 +224,48 @@ void SetPWM(int dutyCicle, int time){
 
 }
 
-void ReadData(double &_Mean, double &_MeanMean){
+void ReadData(double &_Mean, double &_Sigma){
   double Sample;
 
   _Mean=0;
-  _MeanMean=0;
+  _Sigma=0;
   for(int numberMesure=0; numberMesure<Sample_length; ++numberMesure){
-    Sample=analogRead(A0)*1./Sample_length;
-    _Mean+=Sample;
-    _MeanMean+=Sample*Sample;
+    Sample=analogRead(A0);
+    _Mean+=Sample*1./Sample_length;
+    _Sigma+=Sample*Sample*1./Sample_length;
+  }
+  _Sigma=sqrt(_Sigma-_Mean*_Mean);
+}
+
+
+ void setPwmFrequency(int pin, int divisor) {
+  byte mode;
+  if(pin == 5 || pin == 6 || pin == 9 || pin == 10) {
+    switch(divisor) {
+      case 1: mode = 0x01; break;
+      case 8: mode = 0x02; break;
+      case 64: mode = 0x03; break;
+      case 256: mode = 0x04; break;
+      case 1024: mode = 0x05; break;
+      default: return;
+    }
+    if(pin == 5 || pin == 6) {
+      TCCR0B = TCCR0B & 0b11111000 | mode;
+    } else {
+      TCCR1B = TCCR1B & 0b11111000 | mode;
+    }
+  }else if(pin == 3 || pin == 11) {
+    switch(divisor) {
+      case 1: mode = 0x01; break;
+      case 8: mode = 0x02; break;
+      case 32: mode = 0x03; break;
+      case 64: mode = 0x04; break;
+      case 128: mode = 0x05; break;
+      case 256: mode = 0x06; break;
+      case 1024: mode = 0x7; break;
+      default: return;
+    }
+    TCCR2B = TCCR2B & 0b11111000 | mode;
   }
 }
 
