@@ -2,7 +2,6 @@
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
 #include <QtCore/QDateTime>
-
 #include "Funzioni.h"
 #include <fstream>
 
@@ -107,14 +106,25 @@ int main(int argc, char** argv){
   
   standard_out << QObject::tr("Controllo della Seriale:") << endl
 		     << QObject::tr("\t[r] Campiona per 1000 volte e restiusce la seguente stringa:") << endl
-		     << QObject::tr("\t\t dutyCicle:Mean:Mean^2") << endl
+		     << QObject::tr("\t\t dutyCicle:Mean:Sigma") << endl
 		     << QObject::tr("\t[w] Modifica il duty Cicle") << endl
 		     << QObject::tr("\t[a] Fa una scansione completa sul duty Cicle da 0 a 255\n")
 		     << QObject::tr("\t\t eseguendo ogni volta la lettura( vedi [r] )")<< endl
+		     << QObject::tr("\t[t] Acquisisce misure raw dal fotodiodo ad intervalli regolari\n"
+				    "\t\trestituendo ad ogni misura la stringa:\n\t\t\tclock:rawMeasure#\n"
+				    "\t\tdove il clock è il tempo trascorso tra l'ultimo reset e la \n"
+				    "\t\tmisura rawMeasure, espresso in microsecondi\n" ) << flush
 		     << QObject::tr("\t[h] restituisce questo OutPut") << endl
 		     << QObject::tr("\t[s] Salva su File") << endl
 		     << QObject::tr("\t[q] Salva  Esce") << endl
 		     ;
+  SerialSelected->write("w");
+  SerialSelected->flush();
+  SerialSelected->write("0");
+  SerialSelected->flush();
+  
+  
+  
   while(true){
     standard_out << ">>" << flush;
     standard_in >> command;
@@ -156,13 +166,64 @@ int main(int argc, char** argv){
 	SerialSelected->flush();
 	SerialSelected->clear();
 
-	Data.append("#").append(logTime.toString("ddMMyyyy hhmmss") ).append("#\n");
-	while( ( SerialSelected->waitForReadyRead(10000) ) ){
-    
-	    Data.append( SerialSelected->readAll() );
+	Data.append("#").append(logTime.toString("ddMMyyyy hhmmss") ).append("\n");
+	Data.append("#Scanning on dutyCicle\n#duty\tmean\tsigma\n");
+	{
+	  QByteArray tmp_data;
+	  bool breakWhile=false;
+	  while( ( SerialSelected->waitForReadyRead(-1) ) ){
+	      tmp_data.clear();
+	      tmp_data.append( SerialSelected->readAll() );
+	      if( tmp_data.contains('$') ){
+		tmp_data.remove( tmp_data.indexOf('$'),1 );
+		standard_out << "ora esco" << endl;
+
+		breakWhile=true;
+	      }
+	      tmp_data.replace(':','\t');
+	      tmp_data.replace('#','\n');
+	      Data.append(tmp_data);
+	      
+	      
+	      if( breakWhile ) break;
+	  }
 	}
 	SerialSelected->readAll();
-
+	
+	break;
+	
+      case 't':
+	SerialSelected->write("t");
+	SerialSelected->flush();
+	
+	Data.append("#").append(logTime.toString("ddMMyyyy hhmmss") ).append("\n");
+	Data.append("#Acquire ");
+	standard_out << QObject::tr("Inserire il numero di misure che si vuole fare\n>>") << flush;
+	standard_in >> tmp;
+	SerialSelected->write(tmp.toStdString().c_str());
+	SerialSelected->flush();
+	
+	Data.append(" measure\n#time\tMeasure\n");
+	{
+	  QByteArray tmp_data;
+	  bool breakWhile=false;
+	  while( ( SerialSelected->waitForReadyRead(10000) ) ){
+	      standard_out << "dentro la lettura" << endl;
+	      tmp_data.clear();
+	      tmp_data.append( SerialSelected->readAll() );
+	      
+	      if( tmp_data.contains('$') ){
+		standard_out << "ora esco" << endl;
+		breakWhile=true;
+	      }
+	      tmp_data.replace(':','\t');
+	      tmp_data.replace('#','\n');
+	      tmp_data.replace('$','\n');
+	      Data.append(tmp_data);
+	      if( breakWhile ) break;
+	  }
+	}
+	SerialSelected->readAll();
 	break;
       case 's':
 	save:
@@ -177,8 +238,10 @@ int main(int argc, char** argv){
 	LogMisure.open(QIODevice::WriteOnly|QIODevice::Append);
 	log_out << QObject::tr("Saving data in %1/ \b%2").arg( QDir::currentPath() ).arg( LogMisure.fileName() )  << endl;
 
-	file_out.setDevice(&LogMisure);
 	
+	
+	file_out.setDevice(&LogMisure);
+
 	
 	file_out << Data << flush;
 	file_out.device()->close();
@@ -199,11 +262,15 @@ int main(int argc, char** argv){
       case 'h':
 	standard_out << QObject::tr("Controllo della Seriale:") << endl
 		     << QObject::tr("\t[r] Campiona per 1000 volte e restiusce la seguente stringa:") << endl
-		     << QObject::tr("\t\t dutyCicle:Mean:Mean^2") << endl
+		     << QObject::tr("\t\t dutyCicle:Mean:Sigma") << endl
 		     << QObject::tr("\t[w] Modifica il duty Cicle") << endl
 		     << QObject::tr("\t[a] Fa una scansione completa sul duty Cicle da 0 a 255\n")
-		     << QObject::tr("\t\t eseguendo ogni volta la lettura( vedi [r] )")<< endl
+		     << QObject::tr("\t\teseguendo ogni volta la lettura( vedi [r] )")<< endl
 		     << QObject::tr("\t[h] restituisce questo OutPut") << endl
+		     << QObject::tr("\t[t] Acquisisce misure raw dal fotodiodo ad intervalli regolari\n"
+				    "\t\trestituendo ad ogni misura la stringa:\n\t\t\tclock:rawMeasure#\n"
+				    "\t\tdove il clock è il tempo trascorso tra l'ultimo reset e la \n"
+				    "\t\tmisura rawMeasure, espresso in microsecondi\n" ) << flush
 		     << QObject::tr("\t[s] Salva su File") << endl
 		     << QObject::tr("\t[q] Salva  Esce") << endl
 		     ;
