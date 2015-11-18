@@ -142,7 +142,7 @@ void loop() {
              Serial.print(Mean);
              Serial.print(":");
              Serial.print(Sigma);
-             Serial.println("#");
+             Serial.print("#");
              delay(200);
              digitalWrite(led_read,LOW);
              

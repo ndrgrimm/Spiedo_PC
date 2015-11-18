@@ -1,4 +1,7 @@
 #include "selectionWindows.h"
+#include "ui_selectionWindows.h"
+
+
 #include <QtSerialPort/QSerialPortInfo>
 #include <QtSerialPort/QSerialPort>
 
@@ -13,17 +16,26 @@
 
 SelectionWindows::SelectionWindows(QWidget* parent):
 QWidget(parent),
-m_serialList(this),
-m_textBox(this),
-m_selectingButton(this),
-m_serialInfoList(QSerialPortInfo::availablePorts())
+// m_serialList(this),
+// m_textBox(this),
+// m_selectingButton(this),
+m_serialInfoList(QSerialPortInfo::availablePorts()),
+m_ui(new Ui::SelectionWindows)
 {
+  m_ui->setupUi(this);
+  m_out=0;
   updateSerialList();
+  
   updateTextBox(0);
-  m_selectingButton.setText("Seleziona");
-  connect( &m_serialList,SIGNAL( currentRowChanged(int) ),this, SLOT( updateTextBox(int) ) );
-  connect( &m_selectingButton,SIGNAL( clicked(bool) ),this, SLOT( selectionSerial(bool) ) );
-  connect( this, SIGNAL(serialSelected(QSerialPort*)),this, SLOT( close()) );
+  
+  connect( (m_ui->m_SerialList),     SIGNAL(activated(QString)),	    this, SLOT( updateSerialList() )  );
+  connect( (m_ui->m_SerialList),     SIGNAL(currentIndexChanged(int)),      this, SLOT( updateTextBox(int) )  );
+  
+  connect( (m_ui->m_selectionButton),SIGNAL( clicked( bool ) ),             this, SLOT( selectionSerial(bool) ) );
+  connect( (m_ui->m_quitButton),     SIGNAL( clicked( bool ) ),             this, SLOT( close() ) );
+  
+  connect( this,                     SIGNAL(serialSelected(QSerialPort*)),  this, SLOT( close() ) );
+  
   
 }
 
@@ -32,10 +44,39 @@ m_serialInfoList(QSerialPortInfo::availablePorts())
 
 void SelectionWindows::selectionSerial(bool checked)
 {
+  if( m_out !=0 ){
+    m_out->write("~");
+    m_out->readAll();
+    emit serialSelected(m_out);
+    return;
+  }
+    
+  m_out=new QSerialPort( m_serialInfoList.at( m_ui->m_SerialList->currentIndex() ) );
+  m_out->setBaudRate(QSerialPort::Baud115200);
+  m_out->setDataBits(QSerialPort::Data8);
+  m_out->setParity(QSerialPort::NoParity);
+  m_out->setStopBits(QSerialPort::OneStop); 
+  m_out->setFlowControl(QSerialPort::NoFlowControl);
+  m_out->open(QIODevice::ReadWrite);
   
-  QSerialPort* out=new QSerialPort( m_serialInfoList.at( m_serialList.currentRow() ) );
+  m_out->setRequestToSend(true);
+  m_out->setRequestToSend(false);
   
-  emit serialSelected( out );
+  QByteArray Data;
+  char buf[1000];
+  int leghtbuf=0;
+  while( ( m_out->waitForReadyRead(10000) ) ){
+    m_ui->m_textBox->setText( QObject::tr("Waiting for sketchCode").append("\n") );
+    if( m_out->canReadLine() ){
+      leghtbuf=m_out->readLine(buf,sizeof(buf));
+      if( leghtbuf >= 8 )
+	break;     
+    }
+  }
+  m_ui->m_textBox->setText( QObject::tr("SketchCode: %1\n").arg(buf) );
+  m_ui->m_selectionButton->setText("Conferma");
+   
+  
   
 }
 
@@ -65,26 +106,40 @@ void SelectionWindows::updateTextBox(int index)
           << QObject::tr("Product Identifier: ") << (Serial_info.hasProductIdentifier() ? QByteArray::number(Serial_info.productIdentifier(), 16) : "N\\A") << endl
           << QObject::tr("Busy: ") << (Serial_info.isBusy() ? QObject::tr("Yes") : QObject::tr("No")) << endl;
       }
-      m_textBox.setText(textUpdate);
+      m_ui->m_textBox->setText(textUpdate);
 	  
 }
 
 
 void SelectionWindows::updateSerialList(){
   
-  m_serialList.clear();
+  m_ui->m_SerialList->clear();
   QSerialPortInfo tmp_serialinfo;
   foreach( tmp_serialinfo, m_serialInfoList){
     
-   m_serialList.addItem(tmp_serialinfo.portName());
-   
+   m_ui->m_SerialList->addItem(tmp_serialinfo.portName());
+ 
   }
+  
+  if( m_serialInfoList.empty() ){
+    m_ui->m_selectionButton->setEnabled(false);
+  }else{
+    m_ui->m_selectionButton->setEnabled(true);
+  }
+  
 }
+
+
+
+
+
+
 
 SelectionWindows::~SelectionWindows()
 {
-
+  delete m_ui;
 }
+
 
 
 

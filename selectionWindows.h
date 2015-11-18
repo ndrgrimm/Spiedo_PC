@@ -2,16 +2,23 @@
 #define	SELECTIONWINDOWS_H
 
 
-#include <QObject>
-#include <QtWidgets/QWidget>
+
 #include <QtCore>
 
 #include <QtSerialPort/QSerialPortInfo>
 #include <QtSerialPort/QSerialPort>
 
-#include <QtWidgets/QListWidget>
-#include <QtWidgets/QPushButton>
-#include <QtWidgets/QLabel>
+
+#include <QWidget>
+#include <QPushButton>
+#include <QComboBox>
+#include <QLabel>
+#include "ui_selectionWindows.h"
+
+
+namespace Ui {
+class SelectionWindows;
+}
 
 
 class SelectionWindows: public QWidget
@@ -30,15 +37,13 @@ private slots:
   void updateTextBox(int index);
   void updateSerialList();
   void selectionSerial(bool);
-  void quit(QSerialPort*);
   
 private:
-   
   
-  QListWidget m_serialList;
-  QPushButton m_selectingButton;
-  QLabel m_textBox;
+  QSerialPort *m_out; 
   QList<QSerialPortInfo> m_serialInfoList;
+  Ui::SelectionWindows *m_ui;
+  
 };
 
 #endif  //SelectionWindows.h
