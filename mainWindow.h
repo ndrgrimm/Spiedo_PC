@@ -125,7 +125,7 @@ private slots:
    */
   void updateDisplay();
   
-  
+  void m_close();
   void save();
   
   
@@ -145,7 +145,8 @@ private:
   static QTextStream sm_streamlog;
   
   
-  int m_idexData;
+  int m_indexData1;
+  int m_indexData2;
   QSerialPort * m_serialPort;
   Ui::MainWindow * m_ui;
   SelectionWindows * m_selectionWindow;

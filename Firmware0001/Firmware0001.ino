@@ -140,11 +140,11 @@ void loop() {
              ReadData(Mean, Sigma);           
              digitalWrite(led_read,HIGH);
              Serial.print("%");		// char    1byte
-             Serial.print(duty);	// long    2byte
+             Serial.write(duty);	// long    2byte
              Serial.print(":");		// char    1byte
-             Serial.print(Mean);	// double  4byte
+             Serial.write(Mean);	// double  4byte
              Serial.print(":");		// char    1byte
-             Serial.print(Sigma);	// double  4byte
+             Serial.write(Sigma);	// double  4byte
              Serial.print("%");		// char    1byte
 					// totale 14byte
              delay(200);
@@ -185,9 +185,9 @@ void loop() {
                 time=micros();
                 int_mean=analogRead(A0);
 		Serial.print( "%" );		//char 1byte
-                Serial.print( time );           //long 2byte
+                Serial.write( time );           //long 2byte
                 Serial.print( ":" );            //char 1byte
-                Serial.print( int_mean );	//int  1byte
+                Serial.write( int_mean );	//int  1byte
                 Serial.print( "%" );            //char 1byte
 		                                //tot  6byte
               }

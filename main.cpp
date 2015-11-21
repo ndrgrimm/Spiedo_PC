@@ -133,6 +133,7 @@ int main(int argc, char** argv){
 	SerialSelected->write("r");
 	SerialSelected->flush();
 	SerialSelected->clear();
+	
 	while( ( SerialSelected->waitForReadyRead(10000) ) ){
     
 	  if( SerialSelected->canReadLine() ){
@@ -174,6 +175,8 @@ int main(int argc, char** argv){
 	  while( ( SerialSelected->waitForReadyRead(-1) ) ){
 	      tmp_data.clear();
 	      tmp_data.append( SerialSelected->readAll() );
+
+	      
 	      if( tmp_data.contains('$') ){
 		tmp_data.remove( tmp_data.indexOf('$'),1 );
 		standard_out << "ora esco" << endl;
@@ -181,7 +184,8 @@ int main(int argc, char** argv){
 		breakWhile=true;
 	      }
 	      tmp_data.replace(':','\t');
-	      tmp_data.replace('#','\n');
+	      tmp_data.replace('%','\n');
+	      standard_out << tmp_data << flush;
 	      Data.append(tmp_data);
 	      
 	      
@@ -195,6 +199,7 @@ int main(int argc, char** argv){
       case 't':
 	SerialSelected->write("t");
 	SerialSelected->flush();
+	SerialSelected->clear();
 	
 	Data.append("#").append(logTime.toString("ddMMyyyy hhmmss") ).append("\n");
 	Data.append("#Acquire ");
@@ -217,7 +222,7 @@ int main(int argc, char** argv){
 		breakWhile=true;
 	      }
 	      tmp_data.replace(':','\t');
-	      tmp_data.replace('#','\n');
+	      tmp_data.replace('%','\n');
 	      tmp_data.replace('$','\n');
 	      Data.append(tmp_data);
 	      if( breakWhile ) break;
@@ -270,7 +275,7 @@ int main(int argc, char** argv){
 		     << QObject::tr("\t[t] Acquisisce misure raw dal fotodiodo ad intervalli regolari\n"
 				    "\t\trestituendo ad ogni misura la stringa:\n\t\t\tclock:rawMeasure#\n"
 				    "\t\tdove il clock è il tempo trascorso tra l'ultimo reset e la \n"
-				    "\t\tmisura rawMeasure, espresso in microsecondi\n" ) << flush
+				    "\t\tmisura raw Measure, espresso in microsecondi\n" ) << flush
 		     << QObject::tr("\t[s] Salva su File") << endl
 		     << QObject::tr("\t[q] Salva  Esce") << endl
 		     ;

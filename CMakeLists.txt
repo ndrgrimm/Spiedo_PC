@@ -19,7 +19,7 @@
 cmake_minimum_required(VERSION 2.8.11 )
 
 project(spiedo_pc_gui)
-
+# project(spiedo_pc)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC_MOC_OPTIONS ON)
 
@@ -30,8 +30,10 @@ find_package(Qt5Gui REQUIRED)
 
 find_package(Qt5PrintSupport REQUIRED)
 
-add_executable(spiedo_pc_gui mainGUi.cpp selectionWindows.cpp mainWindow.cpp qcustomplot.cpp moc_mainWindow.cpp moc_selectionWindows.cpp moc_qcustomplot.cpp
-)
+# add_executable(spiedo_pc main.cpp )
 
+add_executable(spiedo_pc_gui mainGUi.cpp selectionWindows.cpp mainWindow.cpp qcustomplot.cpp moc_mainWindow.cpp moc_selectionWindows.cpp moc_qcustomplot.cpp)
+
+# target_link_libraries(spiedo_pc Qt5::Core Qt5::SerialPort Qt5::Widgets Qt5::Gui Qt5::PrintSupport )
 target_link_libraries(spiedo_pc_gui Qt5::Core Qt5::SerialPort Qt5::Widgets Qt5::Gui Qt5::PrintSupport )
-
+# 
