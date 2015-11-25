@@ -37,7 +37,7 @@ m_ui(new Ui::MainWindow)
  connect( m_selectionWindow,       SIGNAL( serialSelected(QSerialPort*) )      , this, SLOT( connectSerialPort(QSerialPort*) ) 		); 
  connect( this,			   SIGNAL(readyPerCentLine(int,double,double)) , this, SLOT(updateDisplay(int,double,double))		);
  connect( m_ui->m_autoButton,      SIGNAL( clicked(bool) )		       , this, SLOT( Scan() ) 					);
- connect( m_ui->m_acquireButton,   SIGNAL( clicked(bool) )		       , this, SLOT( Scan() ) 					);
+ connect( m_ui->m_acquireButton,   SIGNAL( clicked(bool) )		       , this, SLOT(Acquire()) 					);
  connect( m_ui->m_setDutyButton,   SIGNAL( clicked(bool) )		       , this, SLOT( SetDuty() )				);
  connect( m_ui->m_quitButton,      SIGNAL( clicked(bool) )		       , this, SLOT( m_close() ) 				);
  //connect( m_ui->m_saveButton,	   SIGNAL( clicked(bool) )		       , this, SLOT( save(QByteArray*) )			);
@@ -106,9 +106,48 @@ void MainWindow::Scan()
 
   
 
-void MainWindow::Acquire(int iLenghtOfSample, bool isLenghtATimer)
+void MainWindow::Acquire()
 {
+  emit blockingInterface();
+  connect( this, SIGNAL(readyEsclamationLine(ulong,uint)) , this, SLOT(updateAcquireCache(ulong,uint)) );
+  m_AcquireCache.append("#").append( sm_datelog.toString("dd\\MM\\yyyy hh:mm:ss") ).append("\n");
+  m_AcquireCache.append("#Scanning on dutyCicle\n#duty\tmean\tsigma\n");
+  m_serialPort->write("t");
+  m_serialPort->flush();
+  m_serialPort->clear();
+ 
+  int numberOfSample=m_ui->m_spinAcquire->value();
 
+  m_ui->m_plot->xAxis->setRange(0,100);
+  m_ui->m_plot->yAxis->setRange(0,1023);
+  m_ui->m_plot->addGraph(0);
+  m_ui->m_plot->graph(0)->setData(m_AcquireCacheX,m_AcquireCacheY);
+  m_ui->m_plot->replot();
+  if ( numberOfSample <=0 ){
+    
+    m_ui->m_acquireButton->setEnabled(true);
+    m_ui->m_acquireButton->setText("stop");
+    disconnect(m_ui->m_acquireButton, SIGNAL( clicked(bool) ), this, SLOT( Acquire() ) );
+    connect(m_ui->m_acquireButton, SIGNAL( clicked( bool ) ),this, SLOT( stopAcquire() ));
+    m_serialPort->write("g");
+    m_serialPort->flush();
+    m_serialPort->clear();
+    sm_streamlog << "go!" << endl;
+  }else{
+    m_serialPort->write(QString::number(numberOfSample).toStdString().c_str());
+    m_serialPort->flush();
+    m_serialPort->clear();
+  }
+
+
+}
+
+void MainWindow::stopAcquire(){
+  m_serialPort->write("s");
+  m_serialPort->flush();
+  m_serialPort->clear();
+  m_ui->m_acquireButton->setEnabled(false);
+  m_ui->m_acquireButton->setText("Acquisisci misure");
 }
 
 
@@ -319,9 +358,13 @@ void MainWindow::updatePlot()
 void MainWindow::updateAcquireCache(unsigned long time, unsigned int rawMeasure)
 {
   sm_streamlog << time << ' ' << rawMeasure << endl;
-  QTextStream out(&m_ScanCache);
-  out << time << ' ' << rawMeasure << endl;
-
+  m_AcquireCache.append( QString::number(time) ).append(' ').append( QString::number(rawMeasure) ).append('\n') ;
+  m_AcquireCacheX.append( time );
+  m_AcquireCacheY.append( rawMeasure );
+  m_ui->m_plot->xAxis->setRange( m_AcquireCache.at(0), m_AcquireCache.at( m_AcquireCache.size()-1 ) );
+  m_ui->m_plot->graph()->setData(m_AcquireCacheX,m_AcquireCacheY);
+  m_ui->m_plot->replot();
+  
 }
 void MainWindow::updateScanCache(int duty, double mean, double sigma)
 {
@@ -342,9 +385,14 @@ void MainWindow::askForSave()
   
   if ( !m_ScanCache.isEmpty() ){
      save(&m_ScanCache);
+     m_ScanCacheX.clear();
+     m_ScanCacheY.clear();
+     m_ScanCacheYSigma.clear();
   }
   if ( !m_AcquireCache.isEmpty() ){
      save(&m_AcquireCache);
+     m_AcquireCacheY.clear();
+     m_AcquireCacheX.clear();
   }
 
 }

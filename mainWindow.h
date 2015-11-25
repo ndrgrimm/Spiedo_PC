@@ -113,7 +113,7 @@ private slots:
    * @param isLenghtATimer is the limit value a time limit?( if not, the limit is on the samples' number)
    * @return void
    */
-  void Acquire(int iLenghtOfSample, bool isLenghtATimer);
+  void Acquire();
 
   void updateFirstBuffer();
 
@@ -147,6 +147,8 @@ private slots:
   void askForSave();
   
   void disconnectCache();
+  
+  void stopAcquire();
   
   void blockInterface();
   

@@ -24,7 +24,7 @@ void SetPWM(int dutyCicle, int time=1000);
 void setup() {                
   // initialize the digital pin as an output.
   //setPwmFrequency(PWM_pin,2);
-  analogReference(INTERNAL);
+  analogReference(EXTERNAL);
 
   pinMode(led_write, OUTPUT);   
   pinMode(led_read, OUTPUT);
@@ -119,7 +119,7 @@ void loop() {
          
          case 'a':
            digitalWrite(led_auto,HIGH);
-           for(int duty =0; duty<256; duty+=2){
+           for(int duty =0; duty<256; duty++){
              
              SetPWM(duty);
              ReadData(Mean, Sigma);           
@@ -149,6 +149,26 @@ void loop() {
               
               duty=0;
               arg=Serial.readString();
+	      if( arg[0] == 'g' ){
+                Serial.println("ok");
+                do{
+		  time=micros();
+		  int_mean=analogRead(A0);
+		  Serial.print( time );           //long 2byte
+		  Serial.print( ":" );            //char 1byte
+		  Serial.print( int_mean );	//int  1byte
+		  Serial.println( "!" );            //char 1byte
+		  if(Serial.available() >0 ){
+		    arg=Serial.readString();
+		    if( arg[0] == 's' ){
+		      break;
+		    }
+		  }
+                delay(1000);
+		}while(true);
+		Serial.print("$");
+		break;
+	      }
               arg_length=arg.length();
               while( arg[arg_length-1] == '\r' ||  arg[arg_length-1] == '\n' ) --arg_length; 
               for( int i = 1; i< arg_length+1 ; ++i ){
@@ -180,6 +200,7 @@ void loop() {
               break;
           default:
               mydefault:
+              Serial.println("DEFAUALT");
               for( int i=0; i < 5; ++i){
                   digitalWrite(led_write,HIGH);
                   delay(200);
@@ -212,7 +233,7 @@ void loop() {
     Serial.print(Mean);
     Serial.print(":");
     Serial.print(Sigma);
-    Serial.print("%");  
+    Serial.println("%");  
   }
   digitalWrite(led_menu,LOW);
   
@@ -256,7 +277,7 @@ void SetPWM(int dutyCicle, int time){
   
   boolean setHIGH=false;
   if( digitalRead(led_write) == HIGH ) setHIGH=true;
-  for(int i=0; i <2 ;++i){
+  for(int i=0; i <5 ;++i){
   digitalWrite(led_write,HIGH);      //
   delay(200);
   digitalWrite(led_write,LOW);       //
