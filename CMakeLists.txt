@@ -28,6 +28,7 @@ find_package(Qt5SerialPort REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Gui REQUIRED)
 
+
 find_package(Qt5PrintSupport REQUIRED)
 
 # add_executable(spiedo_pc main.cpp )

@@ -46,10 +46,12 @@ void SelectionWindows::selectionSerial(bool checked)
 {
   if( m_out !=0 ){
     m_out->write("~");
+    m_out->flush();
     m_out->readAll();
     emit serialSelected(m_out);
     return;
-  }
+  }  
+
     
   m_out=new QSerialPort( m_serialInfoList.at( m_ui->m_SerialList->currentIndex() ) );
   m_out->setBaudRate(QSerialPort::Baud115200);
@@ -59,14 +61,19 @@ void SelectionWindows::selectionSerial(bool checked)
   m_out->setFlowControl(QSerialPort::NoFlowControl);
   m_out->open(QIODevice::ReadWrite);
   
+  
+
   m_out->setRequestToSend(true);
   m_out->setRequestToSend(false);
   
   QByteArray Data;
   char buf[1000];
   int leghtbuf=0;
+  
+
+  
   while( ( m_out->waitForReadyRead(10000) ) ){
-    m_ui->m_textBox->setText( QObject::tr("Waiting for sketchCode").append("\n") );
+    
     if( m_out->canReadLine() ){
       leghtbuf=m_out->readLine(buf,sizeof(buf));
       if( leghtbuf >= 8 )
@@ -88,6 +95,8 @@ void SelectionWindows::updateTextBox(int index)
   
       QString textUpdate;
       QTextStream out(&textUpdate);
+      m_ui->m_selectionButton->setEnabled(false);
+     
       if( m_serialInfoList.size() == 0 ){
 	out << QObject::tr("Nessuna porta seriale Collegata") << endl;
       }else{
@@ -105,8 +114,12 @@ void SelectionWindows::updateTextBox(int index)
           << QObject::tr("Vendor Identifier: ") << (Serial_info.hasVendorIdentifier() ? QByteArray::number(Serial_info.vendorIdentifier(), 16) : "N\\A") << endl
           << QObject::tr("Product Identifier: ") << (Serial_info.hasProductIdentifier() ? QByteArray::number(Serial_info.productIdentifier(), 16) : "N\\A") << endl
           << QObject::tr("Busy: ") << (Serial_info.isBusy() ? QObject::tr("Yes") : QObject::tr("No")) << endl;
-      }
+      
       m_ui->m_textBox->setText(textUpdate);
+      if( ! Serial_info.isBusy() )	
+	m_ui->m_selectionButton->setEnabled(true);
+	
+      }
 	  
 }
 
@@ -121,11 +134,6 @@ void SelectionWindows::updateSerialList(){
  
   }
   
-  if( m_serialInfoList.empty() ){
-    m_ui->m_selectionButton->setEnabled(false);
-  }else{
-    m_ui->m_selectionButton->setEnabled(true);
-  }
   
 }
 

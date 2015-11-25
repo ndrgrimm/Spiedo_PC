@@ -72,9 +72,18 @@ signals:
    */
   void recivedScanCommand( int iLenghtOfSample, bool isLenghtATimer);
   
+  void readyPerCentLine( int duty, double mean, double sigma);
+  
+  void readyEsclamationLine( unsigned long time, unsigned int RawMeasure);
+  
+  void foundEndDataBlock();
+  
   void blockingInterface();
   
   void unBlockingInterface();
+  
+  void somethingToSave();
+
   
 private slots:
   
@@ -84,15 +93,8 @@ private slots:
    * @param iDutyCicle value of duty cicle that have to set.
    * @return void
    */
-  void SetDuty(int iDutyCicle);
-  /**
-   * @brief slot that ask via Serial a measure from the photo-diode and recive a string like
-   *	'duty:mean:sigma#'. The mean is made from a Sample of 1000 elements, sampled with a
-   * 	frequency of 10kHz FIXME:Quanto è la frequenza?
-   * 
-   * @return void
-   */
-  void Read();
+  void SetDuty();
+
   /**
    * @brief slot that start the auto-scanning on all range of duty Cicle, for each value of
    *	 the duty it recive a string like: 'duty:mean:sigma#'. The mean is made from a 
@@ -101,7 +103,8 @@ private slots:
    * 
    * @return void
    */
-  void Auto();
+  void Scan();
+  
   /**
    * @brief slot that ask via serial a periodic raw measure, user can set limit on the time of sampling or a 
    * 	limit on the number of the samples, via isLenghtATimer boolean variable.
@@ -110,7 +113,14 @@ private slots:
    * @param isLenghtATimer is the limit value a time limit?( if not, the limit is on the samples' number)
    * @return void
    */
-  void Scan(int iLenghtOfSample, bool isLenghtATimer);
+  void Acquire(int iLenghtOfSample, bool isLenghtATimer);
+
+  void updateFirstBuffer();
+
+  void updateScanCache( int duty, double mean, double sigma);
+  
+  void updateAcquireCache( unsigned long time, unsigned int rawMeasure);
+  
   /**
    * @brief slot that update the plot
    * 
@@ -123,15 +133,20 @@ private slots:
    * 
    * @return void
    */
-  void updateDisplay();
+  void updateDisplay( int duty, double mean, double sigma);
   
   void m_close();
-  void save();
   
+  void save( QByteArray*CacheToSave);
+  
+  void addReader();
+
   
   void connectSerialPort( QSerialPort *serialPortSelected);
   
-  void updateData();
+  void askForSave();
+  
+  void disconnectCache();
   
   void blockInterface();
   
@@ -150,7 +165,15 @@ private:
   QSerialPort * m_serialPort;
   Ui::MainWindow * m_ui;
   SelectionWindows * m_selectionWindow;
-  QByteArray m_Data;
+  QByteArray m_firstBuffer;
+  QByteArray m_ScanCache;
+  QVector<double> m_ScanCacheX;
+  QVector<double> m_ScanCacheY;
+  QVector<double> m_ScanCacheYSigma;
+  QByteArray m_AcquireCache;
+  QVector<double> m_AcquireCacheY;
+  QVector<double> m_AcquireCacheX;
+
 
 };
 #endif //MainWindows.h

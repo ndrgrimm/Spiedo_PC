@@ -13,9 +13,7 @@ const int led_auto =  11;
 const int led_menu =  9;
 
 
-
-
-const int Sample_length=1000;
+const int Sample_length=500;
 void ReadData(double &_Mean, double &_Sigma);
 const int PWM_pin=10;
 void setPwmFrequency(int pin, int divisor);
@@ -72,7 +70,6 @@ void loop() {
   unsigned long tmp=0;
   int arg_length=0;
   
-  double Sample;
   double Mean;
   double Sigma;
   
@@ -81,13 +78,14 @@ void loop() {
   unsigned long time2=0;
   boolean exit=false;
   establishContact("TestPiezo");
+  
   digitalWrite(led_menu,HIGH);
   while(true){
     
     if( Serial.available() ){
       
       msg=Serial.read();
-      Serial.readString();
+      //Serial.readString();
       
       switch (msg){
         case 'w':
@@ -118,20 +116,7 @@ void loop() {
 
           break;
           
-         case 'r':
-           digitalWrite(led_read,HIGH);
-           ReadData(Mean, Sigma);
-           Serial.print("%");           
-           Serial.print(duty);
-           Serial.print(":");
-           Serial.print(Mean);
-           Serial.print(":");
-           Serial.print(Sigma);
-           Serial.print("%");
-           Serial.println();
-           delay(500);
-           digitalWrite(led_read,LOW);
-           break;
+         
          case 'a':
            digitalWrite(led_auto,HIGH);
            for(int duty =0; duty<256; duty+=2){
@@ -139,12 +124,11 @@ void loop() {
              SetPWM(duty);
              ReadData(Mean, Sigma);           
              digitalWrite(led_read,HIGH);
-             Serial.print("%");		// char    1byte
              Serial.print(duty);	// long    2byte
              Serial.print(":");		// char    1byte
-             Serial.print(Mean);	// double  4byte
+             Serial.print(double(Mean));	// double  4byte
              Serial.print(":");		// char    1byte
-             Serial.print(Sigma);	// double  4byte
+             Serial.print(double(Sigma));	// double  4byte
              Serial.print("%");		// char    1byte
 					// totale 14byte
              delay(200);
@@ -184,11 +168,10 @@ void loop() {
               for( int i=0; i<duty; ++i){
                 time=micros();
                 int_mean=analogRead(A0);
-		Serial.print( "%" );		//char 1byte
                 Serial.print( time );           //long 2byte
                 Serial.print( ":" );            //char 1byte
                 Serial.print( int_mean );	//int  1byte
-                Serial.print( "%" );            //char 1byte
+                Serial.print( "!" );            //char 1byte
 		                                //tot  6byte
               }
               delay(300);
@@ -213,22 +196,34 @@ void loop() {
                   digitalWrite(led_write,LOW);
                   delay(200);
               }
-              
+              digitalWrite(led_menu,HIGH);
              ;
+	     
        
-     }
-   delay(1000);
-    
-   }
-   if(exit) break;
- }
- digitalWrite(led_menu,LOW);
+	
+      }
+      
+    }
+    if(exit) break;
+    delay(1000);
+    ReadData(Mean, Sigma);
+    Serial.print(duty);
+    Serial.print(":");
+    Serial.print(Mean);
+    Serial.print(":");
+    Serial.print(Sigma);
+    Serial.print("%");  
+  }
+  digitalWrite(led_menu,LOW);
+  
 }
    
 
 
 
 void establishContact(const char *SketchCode) {
+  Serial.readString();
+  
   while (Serial.available() <= 0) {
     delay(200);
     Serial.println(SketchCode);      // send sketchCode
@@ -271,17 +266,22 @@ void SetPWM(int dutyCicle, int time){
 
 }
 
-void ReadData(double &_Mean, double &_Sigma){
-  unsigned int Sample;
-
-  _Mean=0;
-  _Sigma=0;
+void ReadData( double &_Mean, double &_Sigma){
+  long Sample=0;
+  unsigned long tmp_Mean=0;
+  unsigned long tmp_Sigma=0;
+    
   for(int numberMesure=0; numberMesure<Sample_length; ++numberMesure){
+
     Sample=analogRead(A0);
-    _Mean+=Sample*1./Sample_length;
-    _Sigma+=Sample*Sample*1./Sample_length;
+    tmp_Mean+=Sample;
+    tmp_Sigma+=Sample*Sample;
   }
-  _Sigma=sqrt(_Sigma-_Mean*_Mean);
+
+  _Mean=tmp_Mean*1./Sample_length;
+  _Sigma=sqrt(tmp_Sigma*1./Sample_length -_Mean*_Mean);
+ // delay(100);
+
 }
 
 
