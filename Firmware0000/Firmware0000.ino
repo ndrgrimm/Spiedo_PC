@@ -1,3 +1,4 @@
+
 /*
   Blink
   Turns on an LED on for one second, then off for one second, repeatedly.
@@ -24,7 +25,7 @@ void SetPWM(int dutyCicle, int time=1000);
 void setup() {                
   // initialize the digital pin as an output.
   //setPwmFrequency(PWM_pin,2);
-  analogReference(EXTERNAL);
+  //analogReference(EXTERNAL);
 
   pinMode(led_write, OUTPUT);   
   pinMode(led_read, OUTPUT);
@@ -77,6 +78,7 @@ void loop() {
   unsigned long time=0;
   unsigned long time2=0;
   boolean exit=false;
+  boolean stop=false;
   establishContact("TestPiezo");
   
   digitalWrite(led_menu,HIGH);
@@ -88,8 +90,7 @@ void loop() {
       //Serial.readString();
       
       switch (msg){
-        case 'w':
-          
+        case 'w':{
           digitalWrite(led_write,HIGH);
           while(  Serial.available() <= 0  ){}
           delay(300);
@@ -116,116 +117,186 @@ void loop() {
 
           break;
           
-         
-         case 'a':
-           digitalWrite(led_auto,HIGH);
-           for(int duty =0; duty<256; duty++){
-             
-             SetPWM(duty);
-             ReadData(Mean, Sigma);           
-             digitalWrite(led_read,HIGH);
-             Serial.print(duty);	// long    2byte
-             Serial.print(":");		// char    1byte
-             Serial.print(double(Mean));	// double  4byte
-             Serial.print(":");		// char    1byte
-             Serial.print(double(Sigma));	// double  4byte
-             Serial.print("%");		// char    1byte
-					// totale 14byte
-             delay(200);
-             digitalWrite(led_read,LOW);
-             
-           }
-           Serial.print("$");
-           digitalWrite(led_auto,LOW);
-	   
-           break;
-          case 'q':
-             exit=true;
-             break; 
-          case 't':
-              delay(300);
-             while(  Serial.available() <= 0  ){}
-              delay(300);
-              
-              duty=0;
+        }
+        case 'a':{
+          digitalWrite(led_auto,HIGH);
+          
+          for(int duty =0; duty<256; duty+=5){
+            
+            SetPWM(duty);
+            ReadData(Mean, Sigma);           
+            digitalWrite(led_read,HIGH);
+            Serial.print(duty);         // long    2byte
+            Serial.print(":");          // char    1byte
+            Serial.print(Mean);         // double  4byte
+            Serial.print(":");          // char    1byte
+            Serial.print(Sigma);        // double  4byte
+            Serial.print("%");          // char    1byte
+                                        // totale 14byte
+            delay(200);
+            digitalWrite(led_read,LOW);
+            if( Serial.available() ){
               arg=Serial.readString();
-	      if( arg[0] == 'g' ){
-                Serial.println("ok");
-                do{
-		  time=micros();
-		  int_mean=analogRead(A0);
-		  Serial.print( time );           //long 2byte
-		  Serial.print( ":" );            //char 1byte
-		  Serial.print( int_mean );	//int  1byte
-		  Serial.println( "!" );            //char 1byte
-		  if(Serial.available() >0 ){
-		    arg=Serial.readString();
-		    if( arg[0] == 's' ){
-		      break;
-		    }
-		  }
-                delay(1000);
-		}while(true);
-		Serial.print("$");
-		break;
-	      }
-              arg_length=arg.length();
-              while( arg[arg_length-1] == '\r' ||  arg[arg_length-1] == '\n' ) --arg_length; 
-              for( int i = 1; i< arg_length+1 ; ++i ){
+              if(  arg[0] == 's')
+                break;
+              
+            }
+            
+          }
 
-                  if( arg[arg_length-i] < 48 || arg[arg_length-i]>57){
-                    
-                     goto mydefault;
-                  }
-                  
-                  tmp=1;
-                  for( int j=0; j<i-1; ++j){
-                    
-                    tmp*=10;
-                  }
-                  duty+=(arg[arg_length-i]-48)*tmp;
+           
+          Serial.print("$");
+          digitalWrite(led_auto,LOW);
+          break;
+          
+        }
+        case 't':{
+          delay(300);
+          while(  Serial.available() <= 0  ){}
+          delay(300);
+          
+          duty=0;
+          arg=Serial.readString();
+          if( arg[0] == 'g' ){
+            do{
+              time=millis();
+              int_mean=analogRead(A0);
+              Serial.print( time );           //long 2byte
+              Serial.print( ":" );            //char 1byte
+              Serial.print( int_mean );	//int  1byte
+              Serial.println( "!" );            //char 1byte
+              if(Serial.available() >0 ){
+                arg=Serial.readString();
+                if( arg[0] == 's' )
+                  break;
               }
-              for( int i=0; i<duty; ++i){
-                time=micros();
-                int_mean=analogRead(A0);
-                Serial.print( time );           //long 2byte
-                Serial.print( ":" );            //char 1byte
-                Serial.print( int_mean );	//int  1byte
-                Serial.print( "!" );            //char 1byte
-		                                //tot  6byte
+              
+            }while(true);
+            Serial.print("$");
+            break;
+            
+          }
+          else{
+          arg_length=arg.length();
+          while( arg[arg_length-1] == '\r' ||  arg[arg_length-1] == '\n' )
+            --arg_length; 
+          for( int i = 1; i< arg_length+1 ; ++i ){
+            if( arg[arg_length-i] < 48 || arg[arg_length-i]>57)
+              goto mydefault;
+           
+            tmp=1;
+            for( int j=0; j<i-1; ++j){
+              tmp*=10;
+              
+            }
+            duty+=(arg[arg_length-i]-48)*tmp;
+            
+          }
+          for( int i=0; i<duty; ++i){
+            time=micros();
+            int_mean=analogRead(A0);
+            Serial.print( time );           //long 2byte
+            Serial.print( ":" );            //char 1byte
+            Serial.print( int_mean );       //int  1byte
+            Serial.print( "!" );            //char 1byte
+                                            //tot  6byte
+          }
+          delay(1000);
+          Serial.print("$");
+          duty=0;
+          break;
+	}
+        }
+        case 'r':{
+          
+          
+          for(int duty =0; duty<256; --duty){
+            Mean=Sigma=0;
+            SetPWM(duty);
+            ReadData(Mean, Sigma);           
+            digitalWrite(led_read,HIGH);
+            Serial.print(duty);                 // long    2byte
+            Serial.print(":");                  // char    1byte
+            Serial.print(double(Mean));         // double  4byte
+            Serial.print(":");                  // char    1byte
+            Serial.print(double(Sigma));        // double  4byte
+            Serial.print("%");                  // char    1byte
+                                                // totale 14byte
+            delay(200);
+            digitalWrite(led_read,LOW);
+            if( Serial.available() ){
+              arg=Serial.readString();
+	      if(  arg[0] == 's'){
+                break;
+                stop=true;
+                
               }
-              delay(300);
-              Serial.print("$");
-              duty=0;
-              break;
-          default:
-              mydefault:
-              Serial.println("DEFAUALT");
-              for( int i=0; i < 5; ++i){
-                  digitalWrite(led_write,HIGH);
-                  delay(200);
-                  digitalWrite(led_read,HIGH);
-                  delay(200);
-                  digitalWrite(led_auto,HIGH);
-                  delay(200);
-                  digitalWrite(led_menu,HIGH);
-                  delay(200);
-                  delay(200);
-                  digitalWrite(led_menu,LOW);
-                  digitalWrite(led_auto,LOW);
-                  digitalWrite(led_read,LOW);
-                  digitalWrite(led_write,LOW);
-                  delay(200);
-              }
-              digitalWrite(led_menu,HIGH);
-             ;
-	     
-       
-	
+              
+            }
+            
+          }
+          if( stop)
+            break;
+          for(int duty =254; duty>0; --duty){
+            Mean=Sigma=0;
+            SetPWM(duty);
+            ReadData(Mean, Sigma);           
+            digitalWrite(led_read,HIGH);
+            Serial.print(duty);                 // long    2byte
+            Serial.print(":");                  // char    1byte
+            Serial.print(double(Mean));         // double  4byte
+            Serial.print(":");                  // char    1byte
+            Serial.print(double(Sigma));        // double  4byte
+            Serial.print("%");                  // char    1byte
+                                                // totale 14byte
+            delay(200);
+            digitalWrite(led_read,LOW);
+            if( Serial.available() ){
+              arg=Serial.readString();
+              if(  arg[0] == 's')
+                break;
+            }
+          
+          }
+          Serial.print("$");
+          break;
+          
+        }
+        case 'q':{
+          exit=true;
+          break; 
+        }
+        default:{
+          mydefault:
+          Serial.println("DEFAUALT");
+          for( int i=0; i < 5; ++i){
+            digitalWrite(led_write,HIGH);
+            delay(200);
+            digitalWrite(led_read,HIGH);
+            delay(200);
+            digitalWrite(led_auto,HIGH);
+            delay(200);
+            digitalWrite(led_menu,HIGH);
+            delay(200);
+            delay(200);
+            digitalWrite(led_menu,LOW);
+            digitalWrite(led_auto,LOW);
+            digitalWrite(led_read,LOW);
+            digitalWrite(led_write,LOW);
+            delay(200);
+            
+          }
+          digitalWrite(led_menu,HIGH);
+          
+        }
+        
       }
       
     }
-    if(exit) break;
+    
+    if(exit)
+      break;
+    
     delay(1000);
     ReadData(Mean, Sigma);
     Serial.print(duty);
@@ -233,10 +304,11 @@ void loop() {
     Serial.print(Mean);
     Serial.print(":");
     Serial.print(Sigma);
-    Serial.println("%");  
+    Serial.print("%");  
+    
   }
   digitalWrite(led_menu,LOW);
-  
+ 
 }
    
 
@@ -245,7 +317,7 @@ void loop() {
 void establishContact(const char *SketchCode) {
   Serial.readString();
   
-  while (Serial.available() <= 0) {
+  while (true ) {
     delay(200);
     Serial.println(SketchCode);      // send sketchCode
     digitalWrite(led_write,HIGH);
@@ -263,6 +335,8 @@ void establishContact(const char *SketchCode) {
     digitalWrite(PWM_pin,HIGH);
     delay(200);
     digitalWrite(PWM_pin,LOW);
+    if( Serial.available())
+        break;
   }
   delay(300);
   Serial.readString();

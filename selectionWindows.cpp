@@ -16,9 +16,7 @@
 
 SelectionWindows::SelectionWindows(QWidget* parent):
 QWidget(parent),
-// m_serialList(this),
-// m_textBox(this),
-// m_selectingButton(this),
+
 m_serialInfoList(QSerialPortInfo::availablePorts()),
 m_ui(new Ui::SelectionWindows)
 {
@@ -28,9 +26,9 @@ m_ui(new Ui::SelectionWindows)
   
   updateTextBox(0);
   
-  connect( (m_ui->m_SerialList),     SIGNAL(activated(QString)),	    this, SLOT( updateSerialList() )  );
-  connect( (m_ui->m_SerialList),     SIGNAL(currentIndexChanged(int)),      this, SLOT( updateTextBox(int) )  );
+  connect( (m_ui->m_reloadList),     SIGNAL( clicked( bool ) ), 	    this, SLOT( updateSerialList() )	);
   
+  connect( (m_ui->m_SerialList),     SIGNAL( highlighted(int) ),      	    this, SLOT( updateTextBox(int) )    );
   connect( (m_ui->m_selectionButton),SIGNAL( clicked( bool ) ),             this, SLOT( selectionSerial(bool) ) );
   connect( (m_ui->m_quitButton),     SIGNAL( clicked( bool ) ),             this, SLOT( close() ) );
   
@@ -45,10 +43,14 @@ m_ui(new Ui::SelectionWindows)
 void SelectionWindows::selectionSerial(bool checked)
 {
   if( m_out !=0 ){
+    
     m_out->write("~");
     m_out->flush();
-    m_out->readAll();
+    m_out->clear();
+   
     emit serialSelected(m_out);
+    m_out=0;
+    m_ui->m_selectionButton->setText("Seleziona");
     return;
   }  
 
@@ -62,9 +64,9 @@ void SelectionWindows::selectionSerial(bool checked)
   m_out->open(QIODevice::ReadWrite);
   
   
-
-  m_out->setRequestToSend(true);
-  m_out->setRequestToSend(false);
+  
+//   m_out->setDataTerminalReady( ! m_out->isDataTerminalReady() );
+//   m_out->setDataTerminalReady( ! m_out->isDataTerminalReady() );
   
   QByteArray Data;
   char buf[1000];
@@ -91,8 +93,9 @@ void SelectionWindows::selectionSerial(bool checked)
 
 void SelectionWindows::updateTextBox(int index)
 {
-  
-  
+      
+      QTextStream streamOut(stdout);
+      streamOut << index << endl;
       QString textUpdate;
       QTextStream out(&textUpdate);
       m_ui->m_selectionButton->setEnabled(false);
@@ -120,20 +123,32 @@ void SelectionWindows::updateTextBox(int index)
 	m_ui->m_selectionButton->setEnabled(true);
 	
       }
+      
 	  
 }
 
 
 void SelectionWindows::updateSerialList(){
+  QTextStream streamOut(stdout);
+  streamOut << "prova" << endl;
   
   m_ui->m_SerialList->clear();
   QSerialPortInfo tmp_serialinfo;
-  foreach( tmp_serialinfo, m_serialInfoList){
+  m_serialInfoList=QSerialPortInfo::availablePorts();
+  if( m_serialInfoList.isEmpty() ){
     
-   m_ui->m_SerialList->addItem(tmp_serialinfo.portName());
- 
-  }
+    m_ui->m_textBox->setText("Nessuna porta seriale Collegata");
+    return;
+    
+  }else{
+    
+    foreach( tmp_serialinfo, m_serialInfoList){
+      
+    m_ui->m_SerialList->addItem(tmp_serialinfo.portName());
   
+    }
+    updateTextBox(0);
+  }
   
 }
 

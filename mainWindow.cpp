@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget* parent):
 QMainWindow(parent),
 m_firstBuffer(),
 m_ScanCache(),
+m_selectionWindow(new SelectionWindows()),
 m_ScanCacheX(256),
 m_ScanCacheY(256),
 m_ScanCacheYSigma(256),
@@ -29,21 +30,20 @@ m_ui(new Ui::MainWindow)
  addReader();
  blockInterface();
  
- connect( m_ui->actionAddReader,   SIGNAL( triggered() )	               , this, SLOT( addReader() )				);
- connect( this,			   SIGNAL( blockingInterface() )	       , this, SLOT( blockInterface() )				);  // FIXME hanno davvero senso queste due righe?
- connect( this,			   SIGNAL( unBlockingInterface() )	       , this, SLOT( unBlockInterface() )			);  // FIXME hanno davvero senso queste due righe?
- connect( this,			   SIGNAL( foundEndDataBlock() )	       , this, SLOT( unBlockInterface() )			);
- connect( this,			   SIGNAL( foundEndDataBlock() )	       , this, SLOT( disconnectCache() )			);
- connect( m_selectionWindow,       SIGNAL( serialSelected(QSerialPort*) )      , this, SLOT( connectSerialPort(QSerialPort*) ) 		); 
- connect( this,			   SIGNAL(readyPerCentLine(int,double,double)) , this, SLOT(updateDisplay(int,double,double))		);
- connect( m_ui->m_autoButton,      SIGNAL( clicked(bool) )		       , this, SLOT( Scan() ) 					);
- connect( m_ui->m_acquireButton,   SIGNAL( clicked(bool) )		       , this, SLOT(Acquire()) 					);
- connect( m_ui->m_setDutyButton,   SIGNAL( clicked(bool) )		       , this, SLOT( SetDuty() )				);
- connect( m_ui->m_quitButton,      SIGNAL( clicked(bool) )		       , this, SLOT( m_close() ) 				);
- //connect( m_ui->m_saveButton,	   SIGNAL( clicked(bool) )		       , this, SLOT( save(QByteArray*) )			);
- connect( this,			   SIGNAL(foundEndDataBlock())		       , this, SLOT(askForSave())				);
- 
- 
+ connect( m_ui->actionAddReader,   SIGNAL( triggered() )                        , this, SLOT( addReader() )     			);
+ connect( m_ui->m_autoButton,      SIGNAL( clicked(bool) )                      , this, SLOT( Scan() )          			);
+ connect( m_ui->m_acquireButton,   SIGNAL( clicked(bool) )                      , this, SLOT( Acquire() )       			);
+ connect( m_ui->m_setDutyButton,   SIGNAL( clicked(bool) )                      , this, SLOT( SetDuty() )       			);
+ connect( m_ui->m_quitButton,      SIGNAL( clicked(bool) )                      , this, SLOT( m_close() )       			);
+ connect( m_ui->m_stopButton,	   SIGNAL( clicked(bool) )                      , this, SLOT( stopAcquire() )   			);
+ connect( this, 		   SIGNAL( foundEndDataBlock() )                , this, SLOT( askForSave() )    			);
+ connect( this,                    SIGNAL( blockingInterface() )                , this, SLOT( blockInterface() )			);  // FIXME hanno davvero senso queste due righe?
+ connect( this,                    SIGNAL( unBlockingInterface() )              , this, SLOT( unBlockInterface() )			);  // FIXME hanno davvero senso queste due righe?
+ connect( this,                    SIGNAL( foundEndDataBlock() )                , this, SLOT( unBlockInterface() )			);
+ connect( this,                    SIGNAL( foundEndDataBlock() )                , this, SLOT( disconnectCache() )			);
+ connect( this,                    SIGNAL( readyPerCentLine(int,double,double) ), this, SLOT(updateDisplay(int,double,double) )		);
+ connect( m_selectionWindow,       SIGNAL( serialSelected(QSerialPort*) )       , this, SLOT( connectSerialPort(QSerialPort*) ) 	); 
+  
  
 }
 
@@ -63,6 +63,7 @@ void MainWindow::connectSerialPort(QSerialPort *serialPortSelected)
 {
   if(! serialPortSelected->isOpen()){
     m_selectionWindow->show();
+    emit blockingInterface();
     return;
     
   }
@@ -124,11 +125,6 @@ void MainWindow::Acquire()
   m_ui->m_plot->graph(0)->setData(m_AcquireCacheX,m_AcquireCacheY);
   m_ui->m_plot->replot();
   if ( numberOfSample <=0 ){
-    
-    m_ui->m_acquireButton->setEnabled(true);
-    m_ui->m_acquireButton->setText("stop");
-    disconnect(m_ui->m_acquireButton, SIGNAL( clicked(bool) ), this, SLOT( Acquire() ) );
-    connect(m_ui->m_acquireButton, SIGNAL( clicked( bool ) ),this, SLOT( stopAcquire() ));
     m_serialPort->write("g");
     m_serialPort->flush();
     m_serialPort->clear();
@@ -146,8 +142,7 @@ void MainWindow::stopAcquire(){
   m_serialPort->write("s");
   m_serialPort->flush();
   m_serialPort->clear();
-  m_ui->m_acquireButton->setEnabled(false);
-  m_ui->m_acquireButton->setText("Acquisisci misure");
+
 }
 
 
@@ -199,10 +194,11 @@ void MainWindow::m_close()
 
 void MainWindow::addReader()
 {
-  m_selectionWindow=new SelectionWindows();
   m_selectionWindow->show();
   
 }
+
+
 
 
 
@@ -214,7 +210,7 @@ void MainWindow::unBlockInterface()
    m_ui->m_setDutyButton->setEnabled(true);
    m_ui->m_spinAcquire->setEnabled(true);
    m_ui->m_autoButton->setEnabled(true);
-   
+   m_ui->m_stopButton->setEnabled(true);
    
    
 }
@@ -226,7 +222,7 @@ void MainWindow::blockInterface(){
   m_ui->m_setDutyButton->setEnabled(false);
   m_ui->m_spinAcquire->setEnabled(false);
   m_ui->m_autoButton->setEnabled(false);
-
+  m_ui->m_stopButton->setEnabled(false);
 }
 
 
@@ -240,9 +236,9 @@ void MainWindow::updateFirstBuffer()
  bool isFirst=true;
  sm_streamlog << "tmp_data: " << tmp_data << endl;
  for( unsigned int i=0 ; i < tmp_data.size(); ++i){
-
+   sm_streamlog << "tmp_data.at(i): " << tmp_data.at(i) << endl;
    switch ( tmp_data.at(i) ){
-     sm_streamlog << tmp_data.at(i) << endl;
+     
      case '%':{
        sm_streamlog << "FIND % " << endl;
        double mean=0;
@@ -258,8 +254,10 @@ void MainWindow::updateFirstBuffer()
  	 buffer=new QByteArray( tmp_data.mid( 0, i+1 ) );
 
        }
+       sm_streamlog << "buffer: " << flush;
+       sm_streamlog << *buffer << endl;
        buffer->replace(':',' ');
-       buffer->replace('?','\n');
+       buffer->replace('$','\n');
        QTextStream out(buffer);
        out >> duty >> mean >> sigma;
        sm_streamlog << duty << ' ' <<  mean << ' ' << sigma << endl; //FIXME DEBUG
@@ -267,7 +265,7 @@ void MainWindow::updateFirstBuffer()
       
        emit readyPerCentLine( duty, mean, sigma );
        tmp_data.remove(0,i+1);
-       i=0;
+       i=-1;
        delete buffer;
        break;
      }
@@ -285,37 +283,25 @@ void MainWindow::updateFirstBuffer()
 	   buffer= new QByteArray( tmp_data.mid( 0, i+1 ) ) ;
 	   
 	}
+	sm_streamlog << "buffer: " << flush;
+	sm_streamlog << *buffer << endl;
 	buffer->replace(':',' ');
-        buffer->replace('?','\n');
+        buffer->replace('!','\n');
+        
         QTextStream out(buffer);
         out >> time >> rawMeasure;
         emit readyEsclamationLine( time, rawMeasure);
 	tmp_data.remove(0,i+1);
-	i=0;
+	i=-1;
 	delete buffer;
 	break;
      }  
-/*
- *      case '?':	//FIXME cosa molto sporca, da sistemare
-       
-	  if( isFirst){
-	    
-	     updateDisplay( new QByteArray(m_firstBuffer.append( tmp_data.mid( 0, i+1 ) ) ) );
-	    m_firstBuffer.clear();
-	    isFirst=false;
 
-	  }else{
-	    
-	     updateDisplay( new QByteArray( tmp_data.mid( 0, i+1 ) ) );
-	  }	
-	  tmp_data.remove(0,i+1);
-	  i=0;
-	  break;
-	  */
      case '$':
        tmp_data.remove(i,1);
        sm_streamlog << "FIND $" << endl;
        emit foundEndDataBlock();
+       i=-1;
      default:
        ;
    }
@@ -357,19 +343,19 @@ void MainWindow::updatePlot()
 
 void MainWindow::updateAcquireCache(unsigned long time, unsigned int rawMeasure)
 {
-  sm_streamlog << time << ' ' << rawMeasure << endl;
+//   sm_streamlog << time << ' ' << rawMeasure << endl;
   m_AcquireCache.append( QString::number(time) ).append(' ').append( QString::number(rawMeasure) ).append('\n') ;
   m_AcquireCacheX.append( time );
   m_AcquireCacheY.append( rawMeasure );
-  m_ui->m_plot->xAxis->setRange( m_AcquireCache.at(0), m_AcquireCache.at( m_AcquireCache.size()-1 ) );
-  m_ui->m_plot->graph()->setData(m_AcquireCacheX,m_AcquireCacheY);
+  //m_ui->m_plot->xAxis->setRange( m_AcquireCache.at(0), m_AcquireCache.at( m_AcquireCache.size()-1 ) );
+  m_ui->m_plot->graph(0)->setData(m_AcquireCacheX,m_AcquireCacheY);
   m_ui->m_plot->replot();
   
 }
 void MainWindow::updateScanCache(int duty, double mean, double sigma)
 {
-    sm_streamlog << "Updating Scan Cache..." << endl;
-    sm_streamlog << duty << ' ' <<  mean << ' ' << sigma << endl;
+//     sm_streamlog << "Updating Scan Cache..." << endl;
+//     sm_streamlog << duty << ' ' <<  mean << ' ' << sigma << endl;
     m_ScanCacheX.append(duty);
     m_ScanCacheY.append(mean);
     m_ScanCacheYSigma.append(sigma);

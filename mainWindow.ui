@@ -47,13 +47,6 @@
      <item>
       <layout class="QVBoxLayout" name="l_Buttons">
        <item>
-        <widget class="QPushButton" name="m_saveButton">
-         <property name="text">
-          <string>Salva</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QPushButton" name="m_autoButton">
          <property name="whatsThis">
           <string comment="Scansiona su tutti i possibili valori del duty"/>
@@ -177,6 +170,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="m_stopButton">
+         <property name="text">
+          <string>Stop</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="m_quitButton">
          <property name="text">
           <string>Esci</string>
@@ -261,7 +261,7 @@
   </action>
   <action name="actionAddCounter">
    <property name="text">
-    <string>Aggiungi Counter</string>
+    <string>Aggiungi &amp;Counter</string>
    </property>
   </action>
  </widget>
