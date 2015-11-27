@@ -41,7 +41,7 @@ m_ui(new Ui::MainWindow)
  connect( this,                    SIGNAL( unBlockingInterface() )              , this, SLOT( unBlockInterface() )			);  // FIXME hanno davvero senso queste due righe?
  connect( this,                    SIGNAL( foundEndDataBlock() )                , this, SLOT( unBlockInterface() )			);
  connect( this,                    SIGNAL( foundEndDataBlock() )                , this, SLOT( disconnectCache() )			);
- connect( this,                    SIGNAL( readyPerCentLine(int,double,double) ), this, SLOT(updateDisplay(int,double,double) )		);
+ connect( this,                    SIGNAL( readyPerCentLine(int,double,double) ), this, SLOT( updateDisplay(int,double,double) )		);
  connect( m_selectionWindow,       SIGNAL( serialSelected(QSerialPort*) )       , this, SLOT( connectSerialPort(QSerialPort*) ) 	); 
   
  
@@ -178,7 +178,7 @@ void MainWindow::save(QByteArray *cacheToSave)
 }
 
 
-void MainWindow::m_close()
+void MainWindow::m_close()        //FIXME: è possibile scriverlo intercettando il segnale;
 {
   if(m_serialPort !=0  && m_serialPort->isOpen() ){
     m_serialPort->write("q");

@@ -72,11 +72,7 @@ signals:
    */
   void recivedScanCommand( int iLenghtOfSample, bool isLenghtATimer);
   
-  void readyPerCentLine( int duty, double mean, double sigma);
   
-  void readyEsclamationLine( unsigned long time, unsigned int RawMeasure);
-  
-  void foundEndDataBlock();
   
   void blockingInterface();
   
@@ -87,36 +83,9 @@ signals:
   
 private slots:
   
-  /**
-   * @brief slots that comunicate via Serial Port to set the Duty Cicle equal to iDutyCicle
-   * 
-   * @param iDutyCicle value of duty cicle that have to set.
-   * @return void
-   */
-  void SetDuty();
-
-  /**
-   * @brief slot that start the auto-scanning on all range of duty Cicle, for each value of
-   *	 the duty it recive a string like: 'duty:mean:sigma#'. The mean is made from a 
-   * 	Sample of 1000 elements, sampled with a frequency of 10 kHz FIXME: quanto è la frequnza
-   * 	
-   * 
-   * @return void
-   */
-  void Scan();
+   
   
-  /**
-   * @brief slot that ask via serial a periodic raw measure, user can set limit on the time of sampling or a 
-   * 	limit on the number of the samples, via isLenghtATimer boolean variable.
-   * 
-   * @param iLenghtOfSample value of the limit to set on the scan
-   * @param isLenghtATimer is the limit value a time limit?( if not, the limit is on the samples' number)
-   * @return void
-   */
-  void Acquire();
-
-  void updateFirstBuffer();
-
+ 
   void updateScanCache( int duty, double mean, double sigma);
   
   void updateAcquireCache( unsigned long time, unsigned int rawMeasure);
@@ -148,7 +117,7 @@ private slots:
   
   void disconnectCache();
   
-  void stopAcquire();
+  
   
   void blockInterface();
   
