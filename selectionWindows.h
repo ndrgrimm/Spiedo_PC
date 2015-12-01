@@ -15,6 +15,7 @@
 #include <QLabel>
 #include "ui_selectionWindows.h"
 
+#include "spiedino.h"
 
 namespace Ui {
 class SelectionWindows;
@@ -30,7 +31,7 @@ public:
   
   
 signals:
-  void serialSelected(QSerialPort* serial);
+  void serialSelected(Spiedino* spiedinoOut);
     
  
 private slots:
@@ -40,7 +41,7 @@ private slots:
   
 private:
   
-  QSerialPort *m_out; 
+  Spiedino *m_spiedoOut; 
   QList<QSerialPortInfo> m_serialInfoList;
   Ui::SelectionWindows *m_ui;
   

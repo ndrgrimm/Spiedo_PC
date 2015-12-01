@@ -45,7 +45,7 @@ private slots:
   
   void updateAcquireCache( unsigned long time, unsigned int rawMeasure);
     
-  void disconnetCache();
+  void disconnectCache();
   
 public:
   

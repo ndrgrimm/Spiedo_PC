@@ -210,7 +210,7 @@ void loop() {
         case 'r':{
           
           
-          for(int duty =0; duty<256; --duty){
+          for(int duty =0; duty<256; duty+=10){
             Mean=Sigma=0;
             SetPWM(duty);
             ReadData(Mean, Sigma);           
@@ -222,7 +222,6 @@ void loop() {
             Serial.print(double(Sigma));        // double  4byte
             Serial.print("%");                  // char    1byte
                                                 // totale 14byte
-            delay(200);
             digitalWrite(led_read,LOW);
             if( Serial.available() ){
               arg=Serial.readString();
@@ -237,7 +236,7 @@ void loop() {
           }
           if( stop)
             break;
-          for(int duty =254; duty>0; --duty){
+          for(int duty =254; duty>0; duty-=10){
             Mean=Sigma=0;
             SetPWM(duty);
             ReadData(Mean, Sigma);           
@@ -249,7 +248,6 @@ void loop() {
             Serial.print(double(Sigma));        // double  4byte
             Serial.print("%");                  // char    1byte
                                                 // totale 14byte
-            delay(200);
             digitalWrite(led_read,LOW);
             if( Serial.available() ){
               arg=Serial.readString();

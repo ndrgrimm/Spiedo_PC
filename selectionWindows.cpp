@@ -11,7 +11,6 @@
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QLabel>
-#include <iostream>
 
 
 SelectionWindows::SelectionWindows(QWidget* parent):
@@ -21,18 +20,17 @@ m_serialInfoList(QSerialPortInfo::availablePorts()),
 m_ui(new Ui::SelectionWindows)
 {
   m_ui->setupUi(this);
-  m_out=0;
+  m_spiedoOut=0;
   updateSerialList();
   
   updateTextBox(0);
   
   connect( (m_ui->m_reloadList),     SIGNAL( clicked( bool ) ), 	    this, SLOT( updateSerialList() )	);
-  
   connect( (m_ui->m_SerialList),     SIGNAL( highlighted(int) ),      	    this, SLOT( updateTextBox(int) )    );
   connect( (m_ui->m_selectionButton),SIGNAL( clicked( bool ) ),             this, SLOT( selectionSerial(bool) ) );
   connect( (m_ui->m_quitButton),     SIGNAL( clicked( bool ) ),             this, SLOT( close() ) );
-  
-  connect( this,                     SIGNAL(serialSelected(QSerialPort*)),  this, SLOT( close() ) );
+
+  connect( this,                     SIGNAL(serialSelected(Spiedino*)),     this, SLOT( close() ) );
   
   
 }
@@ -42,49 +40,24 @@ m_ui(new Ui::SelectionWindows)
 
 void SelectionWindows::selectionSerial(bool checked)
 {
-  if( m_out !=0 ){
-    
-    m_out->write("~");
-    m_out->flush();
-    m_out->clear();
-   
-    emit serialSelected(m_out);
-    m_out=0;
-    m_ui->m_selectionButton->setText("Seleziona");
-    return;
-  }  
+  
+  
+  
+    m_spiedoOut=new Spiedino( m_serialInfoList.at( m_ui->m_SerialList->currentIndex() ).portName() );
 
-    
-  m_out=new QSerialPort( m_serialInfoList.at( m_ui->m_SerialList->currentIndex() ) );
-  m_out->setBaudRate(QSerialPort::Baud115200);
-  m_out->setDataBits(QSerialPort::Data8);
-  m_out->setParity(QSerialPort::NoParity);
-  m_out->setStopBits(QSerialPort::OneStop); 
-  m_out->setFlowControl(QSerialPort::NoFlowControl);
-  m_out->open(QIODevice::ReadWrite);
-  
-  
-  
-//   m_out->setDataTerminalReady( ! m_out->isDataTerminalReady() );
-//   m_out->setDataTerminalReady( ! m_out->isDataTerminalReady() );
-  
-  QByteArray Data;
-  char buf[1000];
-  int leghtbuf=0;
-  
-
-  
-  while( ( m_out->waitForReadyRead(10000) ) ){
-    
-    if( m_out->canReadLine() ){
-      leghtbuf=m_out->readLine(buf,sizeof(buf));
-      if( leghtbuf >= 8 )
-	break;     
+    int handShakeFlag;
+    if( handShakeFlag == m_spiedoOut->handShake("TestPiezo") ){
+      emit serialSelected(m_spiedoOut);
+      m_ui->m_textBox->setText("handShake Terminato");
+      return;
     }
-  }
-  m_ui->m_textBox->setText( QObject::tr("SketchCode: %1\n").arg(buf) );
-  m_ui->m_selectionButton->setText("Conferma");
-   
+    
+    
+    QString exitText="handShake FALLITO: ";
+    exitText=handShakeFlag == -1?"Porta Seriale non aperta o non esistente\n":"SketchCode sbagliato\n" ;
+    m_ui->m_textBox->setText(tr(exitText);
+    
+   return;
   
   
 }
@@ -94,8 +67,7 @@ void SelectionWindows::selectionSerial(bool checked)
 void SelectionWindows::updateTextBox(int index)
 {
       
-      QTextStream streamOut(stdout);
-      streamOut << index << endl;
+      
       QString textUpdate;
       QTextStream out(&textUpdate);
       m_ui->m_selectionButton->setEnabled(false);
@@ -129,8 +101,7 @@ void SelectionWindows::updateTextBox(int index)
 
 
 void SelectionWindows::updateSerialList(){
-  QTextStream streamOut(stdout);
-  streamOut << "prova" << endl;
+  
   
   m_ui->m_SerialList->clear();
   QSerialPortInfo tmp_serialinfo;
