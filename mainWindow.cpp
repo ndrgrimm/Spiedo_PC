@@ -230,88 +230,7 @@ void MainWindow::blockInterface(){
 void MainWindow::updateFirstBuffer()
 {
  //FIXME dispacciando i puntatori si ha che tutti accendono allo STESSO QByteArray, quindi 1. deve essere in sola lettura, due bisogna gestire bene la sua rimozione
- QByteArray tmp_data;
- QByteArray *buffer;
- tmp_data.append( m_serialPort->readAll() ); 
- bool isFirst=true;
- sm_streamlog << "tmp_data: " << tmp_data << endl;
- for( unsigned int i=0 ; i < tmp_data.size(); ++i){
-   sm_streamlog << "tmp_data.at(i): " << tmp_data.at(i) << endl;
-   switch ( tmp_data.at(i) ){
-     
-     case '%':{
-       sm_streamlog << "FIND % " << endl;
-       double mean=0;
-       double sigma=0;
-       int duty=0;
-       
-       if( isFirst){
-	 buffer=new QByteArray( m_firstBuffer.append( tmp_data.mid( 0, i+1 ) ) );
-	 m_firstBuffer.clear();
-	 isFirst=false;
-	 
-       }else{
- 	 buffer=new QByteArray( tmp_data.mid( 0, i+1 ) );
-
-       }
-       sm_streamlog << "buffer: " << flush;
-       sm_streamlog << *buffer << endl;
-       buffer->replace(':',' ');
-       buffer->replace('$','\n');
-       QTextStream out(buffer);
-       out >> duty >> mean >> sigma;
-       sm_streamlog << duty << ' ' <<  mean << ' ' << sigma << endl; //FIXME DEBUG
-      
-      
-       emit readyPerCentLine( duty, mean, sigma );
-       tmp_data.remove(0,i+1);
-       i=-1;
-       delete buffer;
-       break;
-     }
-     case '!':{
-       sm_streamlog << "FIND ! " << endl;
-
-       unsigned long time;
-       unsigned int rawMeasure;
-       
-       if( isFirst){
-	 buffer= new QByteArray( m_firstBuffer.append( tmp_data.mid( 0, i+1 ) ) );
-	 m_firstBuffer.clear();
-    	 isFirst=false;
-	 }else{
-	   buffer= new QByteArray( tmp_data.mid( 0, i+1 ) ) ;
-	   
-	}
-	sm_streamlog << "buffer: " << flush;
-	sm_streamlog << *buffer << endl;
-	buffer->replace(':',' ');
-        buffer->replace('!','\n');
-        
-        QTextStream out(buffer);
-        out >> time >> rawMeasure;
-        emit readyEsclamationLine( time, rawMeasure);
-	tmp_data.remove(0,i+1);
-	i=-1;
-	delete buffer;
-	break;
-     }  
-
-     case '$':
-       tmp_data.remove(i,1);
-       sm_streamlog << "FIND $" << endl;
-       emit foundEndDataBlock();
-       i=-1;
-     default:
-       ;
-   }
  
- }
- m_firstBuffer.append(tmp_data);
- 
-  
-  
-}
 
 void MainWindow::disconnectCache(){
  disconnect(this, SIGNAL( readyPerCentLine(int,double,double) ) , this, SLOT( updateScanCache(int,double,double) ));
@@ -352,18 +271,7 @@ void MainWindow::updateAcquireCache(unsigned long time, unsigned int rawMeasure)
   m_ui->m_plot->replot();
   
 }
-void MainWindow::updateScanCache(int duty, double mean, double sigma)
-{
-//     sm_streamlog << "Updating Scan Cache..." << endl;
-//     sm_streamlog << duty << ' ' <<  mean << ' ' << sigma << endl;
-    m_ScanCacheX.append(duty);
-    m_ScanCacheY.append(mean);
-    m_ScanCacheYSigma.append(sigma);
-    m_ui->m_plot->graph(0)->setDataValueError(m_ScanCacheX,m_ScanCacheY,m_ScanCacheYSigma);
-    m_ui->m_plot->replot();
-    m_ScanCache.append( QString::number(duty) ).append(' ').append( QString::number(mean) ).append(' ').append( QString::number(sigma) ).append('\n');
-    
-}
+
 
 
 void MainWindow::askForSave()

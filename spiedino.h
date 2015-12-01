@@ -11,10 +11,12 @@ class Spiedino : public QObject  //FIXME: la faccio ereditare da Serial port o d
   
 public:
   Spiedino(QSerailPort serialPort = 0,QObject *parent=0);
+  
   Spiedino(const QTextStream nameSerialPort, QObject *parent=0);
+  
   Spiedino(const char* nameSerialPort, QObject *parent=0);
 
-  ~Spiedo(); 
+  ~Spiedino(); 
   
  
 signals:
@@ -32,6 +34,8 @@ signals:
   void warmUpStarted(); // È stato avviato il comando warmUp
   
   void ready(); // L'interfaccia è pronta
+  
+  void halt();
  
 private slots:
   
@@ -39,10 +43,8 @@ private slots:
   
   void updateScanCache(int duty, double mean, double sigma);
   
-  void updateAcquireCache( unsigned long time, unsigned int RawMeasure);
-  
-  void connectCache();
-  
+  void updateAcquireCache( unsigned long time, unsigned int rawMeasure);
+    
   void disconnetCache();
   
 public:
@@ -94,11 +96,11 @@ public:
   
   void quit();
   
-  void handShake();
+  bool handShake(QString synText);
   
   void clearScanCache();
   
-  void clearScanCache();
+  void clearAcquireCache();
   
   const ScanData *getScanCache();
   
@@ -112,10 +114,13 @@ private:
   
   QByteArray m_firstBuffer;  
   
+  QSerialPort * m_serialPort;
+  
   ScanData m_scanCache;
   
   AcquireData m_acquireCache;
-  
+
+  bool m_handshakeDone;  
 };
 
 
