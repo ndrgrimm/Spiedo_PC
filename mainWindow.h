@@ -100,11 +100,11 @@ private:
   
   QByteArray m_scanByteCache;
   unsigned int m_indexScanCache;
-  Spiedino::ScanData *m_scanCache;
+  const Spiedino::ScanData *m_scanCache;
   
   QByteArray m_acquireByteCache;
   unsigned int m_indexAcquireCache;
-  Spiedino::AcquireData * m_acquireCache;
+  const Spiedino::AcquireData * m_acquireCache;
   
   
   

@@ -30,7 +30,7 @@ m_ui(new Ui::SelectionWindows)
   connect( (m_ui->m_selectionButton),SIGNAL( clicked( bool ) ),             this, SLOT( selectionSerial(bool) ) );
   connect( (m_ui->m_quitButton),     SIGNAL( clicked( bool ) ),             this, SLOT( close() ) );
 
-  connect( this,                     SIGNAL(serialSelected(Spiedino*)),     this, SLOT( close() ) );
+  connect( this,                     SIGNAL( serialSelected(Spiedino*) ),     this, SLOT( close() ) );
   
   
 }
@@ -46,7 +46,13 @@ void SelectionWindows::selectionSerial(bool checked)
     m_spiedoOut=new Spiedino( m_serialInfoList.at( m_ui->m_SerialList->currentIndex() ).portName() );
 
     int handShakeFlag;
-    if( handShakeFlag == m_spiedoOut->handShake("TestPiezo") ){
+    QTextStream streamOut(stdout);
+    
+    handShakeFlag= m_spiedoOut->handShake("TestPiezo");
+    
+    streamOut << "handShakeFlag: " << handShakeFlag << endl;
+    streamOut << "that is bool : " << ( (handShakeFlag) ?"true":"false") << endl;
+    if( handShakeFlag ){
       emit serialSelected(m_spiedoOut);
       m_ui->m_textBox->setText("handShake Terminato");
       return;
@@ -54,8 +60,13 @@ void SelectionWindows::selectionSerial(bool checked)
     
     
     QString exitText="handShake FALLITO: ";
-    exitText=handShakeFlag == -1?"Porta Seriale non aperta o non esistente\n":"SketchCode sbagliato\n" ;
-    m_ui->m_textBox->setText(tr(exitText);
+    exitText=handShakeFlag == -1 ?"Porta Seriale non aperta o non esistente\n":"SketchCode sbagliato\n" ;
+    m_ui->m_textBox->setText(exitText);
+
+    if(! handShakeFlag){
+      m_ui->m_selectionButton->setEnabled(false);
+      delete m_spiedoOut;
+    }
     
    return;
   
@@ -70,7 +81,6 @@ void SelectionWindows::updateTextBox(int index)
       
       QString textUpdate;
       QTextStream out(&textUpdate);
-      m_ui->m_selectionButton->setEnabled(false);
      
       if( m_serialInfoList.size() == 0 ){
 	out << QObject::tr("Nessuna porta seriale Collegata") << endl;
@@ -91,17 +101,18 @@ void SelectionWindows::updateTextBox(int index)
           << QObject::tr("Busy: ") << (Serial_info.isBusy() ? QObject::tr("Yes") : QObject::tr("No")) << endl;
       
       m_ui->m_textBox->setText(textUpdate);
-      if( ! Serial_info.isBusy() )	
-	m_ui->m_selectionButton->setEnabled(true);
+      if( Serial_info.isBusy() )	
+	m_ui->m_selectionButton->setEnabled(false);
 	
       }
-      
+     
 	  
 }
 
 
 void SelectionWindows::updateSerialList(){
   
+  m_ui->m_selectionButton->setEnabled(true);
   
   m_ui->m_SerialList->clear();
   QSerialPortInfo tmp_serialinfo;

@@ -10,9 +10,9 @@ class Spiedino : public QObject  //FIXME: la faccio ereditare da Serial port o d
   Q_OBJECT
   
 public:
-  Spiedino(QSerailPort serialPort = 0,QObject *parent=0);
+  Spiedino(QSerialPort &serialPort, QObject *parent=0);
   
-  Spiedino(const QTextStream nameSerialPort, QObject *parent=0);
+  Spiedino(const QString nameSerialPort, QObject *parent=0);
   
   Spiedino(const char* nameSerialPort, QObject *parent=0);
 
@@ -96,7 +96,7 @@ public:
   
   void quit();
   
-  bool handShake(QString synText);
+  int handShake(QString synText);
   
   void clearScanCache();
   

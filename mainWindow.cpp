@@ -30,10 +30,8 @@ m_ui(new Ui::MainWindow)
  connect( m_ui->m_acquireButton,   SIGNAL( clicked(bool) )                      , this, SLOT( Acquire() )       			);
  connect( m_ui->m_setDutyButton,   SIGNAL( clicked(bool) )                      , this, SLOT( SetDuty() )       			);
  connect( m_ui->m_quitButton,      SIGNAL( clicked(bool) )                      , this, SLOT( m_close() )       			);
- connect( m_ui->m_stopButton,	   SIGNAL( clicked(bool) )                      , this, SLOT( stopAcquire() )   			);
- connect( m_spiedino, 		   SIGNAL( foundEndDataBlock() )                , this, SLOT( askForSave() )    			);
- connect( m_spiedino,              SIGNAL( foundEndDataBlock() )                , this, SLOT( unBlockInterface() )			);
- connect( m_spiedino,              SIGNAL( readyPerCentLine(int,double,double) ), this, SLOT( updateDisplay(int,double,double) )	);
+ connect( m_ui->m_stopButton,	   SIGNAL( clicked(bool) )                      , this, SLOT( StopAcquire() )   			);
+ 
  connect( m_selectionWindow,       SIGNAL( serialSelected(Spiedino*) )          , this, SLOT( connectSpiedino(Spiedino*)        ) 	); 
  connect( this,                    SIGNAL( blockingInterface() )                , this, SLOT( blockInterface() )			);  // FIXME hanno davvero senso queste due righe?
  connect( this,                    SIGNAL( unBlockingInterface() )              , this, SLOT( unBlockInterface() )			);  // FIXME hanno davvero senso queste due righe?
@@ -44,10 +42,14 @@ m_ui(new Ui::MainWindow)
 
 MainWindow::~MainWindow()
 {
-
+// 
   delete m_ui;
+
   delete m_selectionWindow;
-  delete m_spiedino;
+
+  if( !( m_spiedino == 0) ){
+    delete m_spiedino;
+  }
 }
 
 
@@ -63,6 +65,9 @@ void MainWindow::connectSpiedino(Spiedino* spiedinoSelected)
     
   }
   m_spiedino=spiedinoSelected;
+  connect( m_spiedino,              SIGNAL( foundEndDataBlock() )                , this, SLOT( askForSave() )                            );
+  connect( m_spiedino,              SIGNAL( foundEndDataBlock() )                , this, SLOT( unBlockInterface() )                      );
+  connect( m_spiedino,              SIGNAL( readyPerCentLine(int,double,double) ), this, SLOT( updateDisplay(int,double,double) )        );
   emit unBlockingInterface();
 
 }
@@ -83,7 +88,7 @@ void MainWindow::Scan()
 	m_ui->m_plot->xAxis->setRange(0,255);
 	m_ui->m_plot->yAxis->setRange(0,1023);
 	m_ui->m_plot->addGraph(0);
-	m_ui->m_plot->graph(0)->setDataValueError(m_scanCache->duty,m_scanCache->mean,m_scanCache->sigma);
+	//m_ui->m_plot->graph(0)->setDataValueError(m_scanCache->duty,m_scanCache->mean,m_scanCache->sigma);
 	m_ui->m_plot->replot();
         connect( m_spiedino, SIGNAL(readyPerCentLine(int,double,double)), this,  SLOT(updatePlot()) );
 	m_spiedino->scan();
@@ -106,7 +111,7 @@ void MainWindow::Acquire()
   m_ui->m_plot->xAxis->setRange(0,100);
   m_ui->m_plot->xAxis->rescale();
   m_ui->m_plot->addGraph(0);
-  m_ui->m_plot->graph(0)->setData(m_acquireCache->time,m_acquireCache->rawMeasure);
+ // m_ui->m_plot->graph(0)->setData(m_acquireCache->time,m_acquireCache->rawMeasure);
   m_ui->m_plot->replot();
   
   m_spiedino->acquire(numberOfSample);
@@ -115,7 +120,7 @@ void MainWindow::Acquire()
 
 }
 
-void MainWindow::stopAcquire(){
+void MainWindow::StopAcquire(){
   m_spiedino->stop();
 
 }
@@ -134,11 +139,10 @@ void MainWindow::WarmUp(){
 
 void MainWindow::m_close()        //FIXME: è possibile scriverlo intercettando il segnale;
 {
-  if( m_spiedino->isReady() ){
+  if( (! m_spiedino == 0 ) && m_spiedino->isReady() ){
     m_spiedino->quit();
-    
-  }
 
+  }
   close();
 }
 
@@ -161,7 +165,7 @@ void MainWindow::unBlockInterface()
    m_ui->m_setDutyButton->setEnabled(true);
    m_ui->m_spinAcquire->setEnabled(true);
    m_ui->m_autoButton->setEnabled(true);
-   m_ui->m_stopButton->setEnabled(true);
+  // m_ui->m_stopButton->setEnabled(true);
    
    
 }
@@ -173,7 +177,7 @@ void MainWindow::blockInterface(){
   m_ui->m_setDutyButton->setEnabled(false);
   m_ui->m_spinAcquire->setEnabled(false);
   m_ui->m_autoButton->setEnabled(false);
-  m_ui->m_stopButton->setEnabled(false);
+  //m_ui->m_stopButton->setEnabled(false);
 }
 
 
@@ -193,7 +197,6 @@ void MainWindow::disconnectCache(){
 void MainWindow::updateDisplay( int duty, double mean, double sigma )
 {
 
-  // m_ui->m_spinDuty->setValue(duty);
   m_ui->m_diodeLcd->display( int(mean) );
   m_ui->m_diodeStatusBar->setValue( int(mean) );
       
@@ -224,7 +227,7 @@ void MainWindow::askForSave()
     m_spiedino->clearScanCache();
     m_scanByteCache.clear();
   }
-  if ( !m_acquireCache.time.isEmpty() ){
+  if ( !m_acquireCache->time.isEmpty() ){
     
     for(unsigned int i =0; i< m_acquireCache->time.size(); ++i){
      m_acquireByteCache.append( QString::number(m_acquireCache->time.at(i)       ) ).append(' ')
@@ -232,7 +235,7 @@ void MainWindow::askForSave()
       
     }
       
-     save(&m_acquireCache);
+     save(&m_acquireByteCache);
      m_spiedino->clearAcquireCache();
      m_acquireByteCache.clear();
   }
