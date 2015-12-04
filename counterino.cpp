@@ -185,10 +185,15 @@ int Counterino::stop()
 
 int Counterino::getCount()
 {
+  
   m_serialPort->write("SHOW_COUNT\n");
-  QTextStream streamOut(stdout);
-  streamOut << "CONTROLLARE L'output del Counter" << endl;
-  unsigned counts=0;
+  char char_Counts[9];
+  m_serialPort->read(char_Counts,9);
+  QTextStream out(stdout);
+  out << char_Counts << endl;
+  char_Counts[8]='\0';
+  out << char_Counts << endl;
+  unsigned counts=atoi(char_Counts);
   unsigned int ErrorCode=0;
   if( ErrorCode = this->checkBuffer() != 0  )
     return -ErrorCode;

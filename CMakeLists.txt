@@ -39,7 +39,10 @@ add_executable(spiedo_pc_gui mainGUi.cpp
                 counterino.cpp moc_counterino.cpp 
                 selectionCounterWindows.cpp moc_selectionCounterWindows.cpp
                 mainWindow.cpp moc_mainWindow.cpp 
-                qcustomplot.cpp moc_qcustomplot.cpp )
+                qcustomplot.cpp moc_qcustomplot.cpp
+                controlwindows.cpp
+                moc_controlwindows.cpp
+                )
 
 # target_link_libraries(spiedo_pc Qt5::Core Qt5::SerialPort Qt5::Widgets Qt5::Gui Qt5::PrintSupport )
 target_link_libraries(spiedo_pc_gui Qt5::Core Qt5::SerialPort Qt5::Widgets Qt5::Gui Qt5::PrintSupport )

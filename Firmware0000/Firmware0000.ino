@@ -157,6 +157,7 @@ void loop() {
           
           duty=0;
           arg=Serial.readString();
+          Serial.println(arg);
           if( arg[0] == 'g' ){
             do{
               time=millis();
@@ -170,7 +171,7 @@ void loop() {
                 if( arg[0] == 's' )
                   break;
               }
-              
+              delay(1000);
             }while(true);
             Serial.print("$");
             break;
@@ -282,8 +283,9 @@ void loop() {
             digitalWrite(led_read,LOW);
             digitalWrite(led_write,LOW);
             delay(200);
-            
+           
           }
+          Serial.print("$");
           digitalWrite(led_menu,HIGH);
           
         }

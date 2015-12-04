@@ -60,7 +60,7 @@ public:
     QVector< int > rawMeasure;
   };
   
-  
+public slots:
   /**
    * @brief slots that comunicate via Serial Port to set the Duty Cicle equal to duty
    * 
@@ -101,6 +101,9 @@ public:
   void clearScanCache();
   
   void clearAcquireCache();
+ 
+  
+public:
   
   const ScanData *getScanCache();
   

@@ -12,6 +12,8 @@
 
 #include "selectionWindows.h"
 #include "selectionCounterWindows.h"
+#include "controlwindows.h"
+
 #include "spiedino.h"
 #include "counterino.h"
 
@@ -39,8 +41,20 @@ signals:
   
   void unBlockingInterface();
   
+  
+  
+  
+  void blockSpiedoInterface();
+  void unBlockSpiedoInterface();
+  
+  void blockCounterInterface();
+  void unBlockCounterInterface();
+  
+  
+  
   void somethingToSave();
 
+ 
   
 private slots:
    
@@ -65,9 +79,12 @@ private slots:
   void addReader();
   
   void addCounter();
+  
+  void openControl();
 
   void connectSpiedino( Spiedino *spiedinoSelected );
-  connectCounterino( Counterino *counterinoSelected );
+  
+  void connectCounterino( Counterino *counterinoSelected );
   
   void askForSave();
   
@@ -102,6 +119,8 @@ private:
   
   SelectionWindows *m_selectionReaderWindow;
   SelectionCounterWindows * m_selectionCounterWindow;
+  ControlWindows *m_controlWindows;
+  
   Spiedino * m_spiedino;
   Counterino *m_counterino;
   

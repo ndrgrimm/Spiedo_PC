@@ -142,7 +142,10 @@ void Spiedino::updateFirstBuffer()
 {
  QByteArray tmp_data;
  QByteArray *buffer;
+ 
+ QTextStream out(stdout);
  tmp_data.append( m_serialPort->readAll() ); 
+ out << "tmp_data: " << tmp_data << endl;
  bool isFirst=true;
  for( unsigned int i=0 ; i < tmp_data.size(); ++i){
    switch ( tmp_data.at(i) ){
@@ -306,7 +309,7 @@ void Spiedino::acquire(unsigned int iLenghtOfSample)
   m_serialPort->clear();
   QThread::sleep(1);
   
-  if( iLenghtOfSample ){
+  if ( iLenghtOfSample == 0 ){
     m_serialPort->write( "g" );
   }else{
     m_serialPort->write( QString::number(iLenghtOfSample).toStdString().c_str() );
