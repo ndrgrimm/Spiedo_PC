@@ -11,7 +11,9 @@
 #include <QtSerialPort/QSerialPort>
 
 #include "selectionWindows.h"
+#include "selectionCounterWindows.h"
 #include "spiedino.h"
+#include "counterino.h"
 
 
 #include "ui_mainWindow.h"
@@ -61,8 +63,11 @@ private slots:
   void save( QByteArray*CacheToSave);
   
   void addReader();
+  
+  void addCounter();
 
-  void connectSpiedino( Spiedino *spiedinoSelected);
+  void connectSpiedino( Spiedino *spiedinoSelected );
+  connectCounterino( Counterino *counterinoSelected );
   
   void askForSave();
   
@@ -95,8 +100,10 @@ private:
   
   
   
-  SelectionWindows * m_selectionWindow;
+  SelectionWindows *m_selectionReaderWindow;
+  SelectionCounterWindows * m_selectionCounterWindow;
   Spiedino * m_spiedino;
+  Counterino *m_counterino;
   
   QByteArray m_scanByteCache;
   unsigned int m_indexScanCache;

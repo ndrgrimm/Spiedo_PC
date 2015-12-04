@@ -8,9 +8,9 @@
  
 // Pin 13 has an LED connected on most Arduino boards.
 // give it a name:
-const int led_write = 13;
+const int led_write = 11;
 const int led_read =  12;
-const int led_auto =  11;
+const int led_auto =  13;
 const int led_menu =  9;
 
 

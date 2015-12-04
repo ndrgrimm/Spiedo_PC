@@ -60,10 +60,10 @@ m_serialPort( new QSerialPort(nameSerialPort,this) )
 
 int Spiedino::handShake(QString synText)
 {
-  if( (m_serialPort == 0 ) && !( m_serialPort->open(QIODevice::ReadWrite) ) )
+  if( (m_serialPort == 0 ) || !( m_serialPort->open(QIODevice::ReadWrite) ) )
     return -1;
    
-  m_serialPort->open(QIODevice::ReadWrite);
+//   m_serialPort->open(QIODevice::ReadWrite);
   
   this->reset();
   

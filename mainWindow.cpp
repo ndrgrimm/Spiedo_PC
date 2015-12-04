@@ -12,12 +12,13 @@ QTextStream MainWindow::sm_streamlog(stdout);
 
 MainWindow::MainWindow(QWidget* parent): 
 QMainWindow(parent),
-m_selectionWindow(new SelectionWindows()),
+m_selectionReaderWindow(new SelectionWindows()),
+m_selectionCounterWindow(new SelectionCounterWindows()),
 m_ui(new Ui::MainWindow)
 {
  m_ui->setupUi(this);
  m_spiedino=0;
- 
+ m_counterino=0;
  m_indexAcquireCache=0;
  m_indexScanCache=0;
  
@@ -26,16 +27,17 @@ m_ui(new Ui::MainWindow)
  blockInterface();
  
  connect( m_ui->actionAddReader,   SIGNAL( triggered() )                        , this, SLOT( addReader() )     			);
+ connect( m_ui->actionAddCounter,  SIGNAL(triggered(bool))                      , this, SLOT( addCounter() )                            );                              
  connect( m_ui->m_autoButton,      SIGNAL( clicked(bool) )                      , this, SLOT( Scan() )          			);
  connect( m_ui->m_acquireButton,   SIGNAL( clicked(bool) )                      , this, SLOT( Acquire() )       			);
  connect( m_ui->m_setDutyButton,   SIGNAL( clicked(bool) )                      , this, SLOT( SetDuty() )       			);
  connect( m_ui->m_quitButton,      SIGNAL( clicked(bool) )                      , this, SLOT( m_close() )       			);
  connect( m_ui->m_stopButton,	   SIGNAL( clicked(bool) )                      , this, SLOT( StopAcquire() )   			);
  
- connect( m_selectionWindow,       SIGNAL( serialSelected(Spiedino*) )          , this, SLOT( connectSpiedino(Spiedino*)        ) 	); 
+ connect( m_selectionReaderWindow, SIGNAL( serialSelected(Spiedino*) )    , this, SLOT( connectSpiedino(Spiedino*)        ) 	); 
  connect( this,                    SIGNAL( blockingInterface() )                , this, SLOT( blockInterface() )			);  // FIXME hanno davvero senso queste due righe?
  connect( this,                    SIGNAL( unBlockingInterface() )              , this, SLOT( unBlockInterface() )			);  // FIXME hanno davvero senso queste due righe?
-  
+ connect( m_selectionCounterWindow,SIGNAL( serialCounterSelected(Counterino*) ), this, SLOT(connectCounterino(Counterino*))            );
  
 }
 
@@ -45,7 +47,7 @@ MainWindow::~MainWindow()
 // 
   delete m_ui;
 
-  delete m_selectionWindow;
+  delete m_selectionReaderWindow;
 
   if( !( m_spiedino == 0) ){
     delete m_spiedino;
@@ -59,7 +61,7 @@ void MainWindow::connectSpiedino(Spiedino* spiedinoSelected)
 {
 
   if(! spiedinoSelected->isReady() ){
-    m_selectionWindow->show();
+    m_selectionReaderWindow->show();
     emit blockingInterface();
     return;
     
@@ -68,6 +70,29 @@ void MainWindow::connectSpiedino(Spiedino* spiedinoSelected)
   connect( m_spiedino,              SIGNAL( foundEndDataBlock() )                , this, SLOT( askForSave() )                            );
   connect( m_spiedino,              SIGNAL( foundEndDataBlock() )                , this, SLOT( unBlockInterface() )                      );
   connect( m_spiedino,              SIGNAL( readyPerCentLine(int,double,double) ), this, SLOT( updateDisplay(int,double,double) )        );
+  emit unBlockingInterface();
+
+}
+
+void MainWindow::connectCounterino(Counterino* counterinoSelected)
+{
+
+//   if(! Counterino->isReady() ){
+//     m_selectionReaderWindow->show();
+//     emit blockingInterface();
+//     return;
+//     
+//   }
+  int ErrorCode= counterinoSelected->initialize();
+  if( ErrorCode != 0 ){
+    sm_streamlog << "COUNTER ERROR: " << ErrorCode << endl;
+    m_selectionReaderWindow->show();
+    emit blockingInterface();
+    return;
+    
+  }
+  
+  m_counterino=counterinoSelected;
   emit unBlockingInterface();
 
 }
@@ -149,7 +174,13 @@ void MainWindow::m_close()        //FIXME: è possibile scriverlo intercettando 
 
 void MainWindow::addReader()
 {
-  m_selectionWindow->show();
+  m_selectionReaderWindow->show();
+  
+}
+
+void MainWindow::addCounter()
+{
+  m_selectionCounterWindow->show();
   
 }
 
@@ -260,3 +291,5 @@ void MainWindow::save(QByteArray *cacheToSave)
 
   emit unBlockingInterface();
 }
+
+
