@@ -41,14 +41,14 @@ signals:
   
   void unBlockingInterface();
   
+  void enableControl();
   
   
+  void blockingSpiedoInterface();
+  void unBlockingSpiedoInterface();
   
-  void blockSpiedoInterface();
-  void unBlockSpiedoInterface();
-  
-  void blockCounterInterface();
-  void unBlockCounterInterface();
+  void blockingCounterInterface();
+  void unBlockingCounterInterface();
   
   
   
@@ -86,17 +86,33 @@ private slots:
   
   void connectCounterino( Counterino *counterinoSelected );
   
+  void activeControl();
+  
   void askForSave();
   
   void disconnectCache();
  
+  
+  
+  
+  
+  
   void blockInterface();
   
   void unBlockInterface();
   
+  void blockCounterInterface();
+  
+  void blockSpiedoInterface();
+  
+  void unBlockCounterInterface();
+  
+  void unBlockSpiedoInterface();
+  
   
   // Buttom
   
+  // Spiedo
   void Scan();
   
   void Acquire();
@@ -107,10 +123,17 @@ private slots:
   
   void StopAcquire();
   
+  //Counterino
+  
+  void StartCount();
+  
+  void StopCount();
+  
   
 private:
   
   bool m_interfaceIsBlocked;
+  bool isAllConnect;
   
   static QDateTime sm_datelog;
   static QTextStream sm_streamlog;
@@ -132,8 +155,8 @@ private:
   unsigned int m_indexAcquireCache;
   const Spiedino::AcquireData * m_acquireCache;
   
-  
-  
+  QTimer *m_counterinoTimer;
+  QTimer *m_spiedinoTimer;
   
   Ui::MainWindow * m_ui;
   

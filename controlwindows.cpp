@@ -49,7 +49,7 @@ ControlWindows::~ControlWindows()
 }
 
 
-void ControlWindows::getDevices(Spiedino* spiedino, Counterino* counterino)
+void ControlWindows::setDevices(Spiedino* spiedino, Counterino* counterino)
 {
 m_spiedino=spiedino;
 m_counterino=counterino;
@@ -81,13 +81,13 @@ void ControlWindows::start()
 void ControlWindows::endStep()
 {
  
-  m_spiedino->stop();
+ m_spiedino->stop();
   m_counterino->stop();
   disconnect( &m_clock, SIGNAL(timeout(QPrivateSignal)) , this, SLOT(update()));
   m_cache.append("#Duty: ").append( QString::number(m_duty ) ).append('\n');
   m_cache.append("#Conteggi: ").append( QString::number(m_counterino->getCount() ) ).append('\n');
   m_cache.append("#time[millis] rawMeasure\n");
-  const Spiedino::AcquireData *bufferAcquireData=m_spiedino->getAcquireCache();
+ const Spiedino::AcquireData *bufferAcquireData=m_spiedino->getAcquireCache();
   
   for( unsigned int i=0; i < bufferAcquireData->time.size(); ++i){
     m_cache.append( QString::number(bufferAcquireData->time.at(i)       ) ).append(' ')
@@ -121,6 +121,7 @@ void ControlWindows::startStep()
   m_cache.append("#Tempo di integrazione: ").append( QString::number( m_ui->spinIntegrationTime->value()  ) ).append('\n');
   
   m_spiedino->setDuty(m_duty);
+  
   m_timer.start();
   m_spiedino->acquire(0);
   m_counterino->start();
@@ -134,6 +135,7 @@ void ControlWindows::update()
  m_ui->lcdNumber->display( m_counterino->getCount() );
  
  m_ui->progressBar->setValue( m_duty*1./256);
+ 
  m_clock.start();
 }
 

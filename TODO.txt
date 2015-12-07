@@ -1,16 +1,17 @@
 To Do:
--Guardare MenuBar e come funziona
+Didit Guardare MenuBar e come funziona
 
--Vedere se ha senso aggiungere le Tab per le varie misure:
+DiditVedere se ha senso aggiungere le Tab per le varie misure:
   potrebbe essere comodo per gestire le varie funzionalità
   dell'arduino
   
-- Implementazione Counter Ortec model 997
+Didit Implementazione Counter Ortec model 997
   Può essere utile vedersi spiedo!
   UPdate: La gestione del Ortec sembra semplice:
   tu invii un comando è lui ti risponde.
   
-- Ridisegnare l'interfaccia in modo da poter sia leggere 
+Didit Ridisegnare l'interfaccia in modo da poter sia leggere 
   che scrivere il duty cicle
+  
 - Fare un paio di check sulla qualità della funzione Write
 

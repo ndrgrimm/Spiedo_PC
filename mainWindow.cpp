@@ -1,6 +1,6 @@
 #include "mainWindow.h"
 #include "ui_mainWindow.h"
-#include "ui_controlwindows.h"
+
 
 #include <QtCore/QDateTime>
 #include <QThread>
@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget* parent):
 QMainWindow(parent),
 m_selectionReaderWindow(new SelectionWindows()),
 m_selectionCounterWindow(new SelectionCounterWindows()),
-m_controlWindows(new ControlWindows() ),
+m_controlWindows(0),
 m_ui(new Ui::MainWindow)
 {
  m_ui->setupUi(this);
@@ -25,24 +25,37 @@ m_ui(new Ui::MainWindow)
  m_indexScanCache=0;
  m_scanCache=0;
  m_acquireCache=0;
+ isAllConnect= false;   
+ 
+ blockCounterInterface();
+ blockSpiedoInterface();
+ m_ui->tabWidget->widget(0)->setEnabled(true);
+ 
+ // Menu Comand
+ connect( m_ui->actionAddReader,      SIGNAL( triggered(bool))                     , this, SLOT( addReader() )                  );
+ connect( m_ui->actionAddCounter,     SIGNAL( triggered(bool))                     , this, SLOT( addCounter() )                 );                              
+ connect( m_ui->actionOpenControl,    SIGNAL( triggered(bool))                     , this, SLOT( openControl() )                );
+                                                                                                                                
+                                                                                                                                
+ // Spiedino Comand                                                                                                             
+ connect( m_ui->m_autoButton,         SIGNAL( clicked(bool) )                      , this, SLOT( Scan() )                       );
+ connect( m_ui->m_acquireButton,      SIGNAL( clicked(bool) )                      , this, SLOT( Acquire() )                    );
+ connect( m_ui->m_setDutyButton,      SIGNAL( clicked(bool) )                      , this, SLOT( SetDuty() )                    );
+ connect( m_ui->m_quitButton,         SIGNAL( clicked(bool) )                      , this, SLOT( m_close() )                    );
+ connect( m_ui->m_stopSpiedoButton,   SIGNAL( clicked(bool) )                      , this, SLOT( StopAcquire() )                );
+                                                                                                                               
+ // Counterino Comand                                                                                                          
+ connect( m_ui->m_startCounterButton, SIGNAL(clicked(bool))                        , this, SLOT( StartCount() )                 );
+ connect( m_ui->m_stopCounter,        SIGNAL(clicked(bool))                        , this, SLOT(StopCount())                    );
+ 
+ connect( m_selectionReaderWindow, SIGNAL( serialSelected(Spiedino*) )             , this, SLOT( connectSpiedino(Spiedino*))    ); 
+ connect( m_selectionCounterWindow,SIGNAL( serialCounterSelected(Counterino*) )    , this, SLOT( connectCounterino(Counterino*)));
+                                                                                   
+                                                                                   
+ connect( this,                    SIGNAL( blockingInterface() )                   , this, SLOT( blockInterface() )		);  // FIXME hanno davvero senso queste due righe?
+ connect( this,                    SIGNAL( unBlockingInterface() )                 , this, SLOT( unBlockInterface() )		);  // FIXME hanno davvero senso queste due righe?
+ connect( this,                    SIGNAL( enableControl())                        , this, SLOT( activeControl() )              );
 
- addReader();
- blockInterface();
- 
- connect( m_ui->actionAddReader,   SIGNAL( triggered() )                        , this, SLOT( addReader() )     			);
- connect( m_ui->actionAddCounter,  SIGNAL( triggered(bool))                     , this, SLOT( addCounter() )                            );                              
- connect( m_ui->actionOpenControl, SIGNAL( triggered(bool))                     , this, SLOT( openControl() )                           );
- connect( m_ui->m_autoButton,      SIGNAL( clicked(bool) )                      , this, SLOT( Scan() )          			);
- connect( m_ui->m_acquireButton,   SIGNAL( clicked(bool) )                      , this, SLOT( Acquire() )       			);
- connect( m_ui->m_setDutyButton,   SIGNAL( clicked(bool) )                      , this, SLOT( SetDuty() )       			);
- connect( m_ui->m_quitButton,      SIGNAL( clicked(bool) )                      , this, SLOT( m_close() )       			);
- connect( m_ui->m_stopButton,	   SIGNAL( clicked(bool) )                      , this, SLOT( StopAcquire() )   			);
- 
- connect( m_selectionReaderWindow, SIGNAL( serialSelected(Spiedino*) )          , this, SLOT( connectSpiedino(Spiedino*)        ) 	); 
- connect( this,                    SIGNAL( blockingInterface() )                , this, SLOT( blockInterface() )			);  // FIXME hanno davvero senso queste due righe?
- connect( this,                    SIGNAL( unBlockingInterface() )              , this, SLOT( unBlockInterface() )			);  // FIXME hanno davvero senso queste due righe?
- connect( m_selectionCounterWindow,SIGNAL( serialCounterSelected(Counterino*) ) , this, SLOT( connectCounterino(Counterino*))           );
- 
 }
 
 
@@ -71,10 +84,18 @@ void MainWindow::connectSpiedino(Spiedino* spiedinoSelected)
     
   }
   m_spiedino=spiedinoSelected;
-  connect( m_spiedino,              SIGNAL( foundEndDataBlock() )                , this, SLOT( askForSave() )                            );
-  connect( m_spiedino,              SIGNAL( foundEndDataBlock() )                , this, SLOT( unBlockInterface() )                      );
-  connect( m_spiedino,              SIGNAL( readyPerCentLine(int,double,double) ), this, SLOT( updateDisplay(int,double,double) )        );
-  emit unBlockingInterface();
+  connect( m_spiedino,              SIGNAL( foundEndDataBlock() )                 , this, SLOT( askForSave() )                          );
+  connect( m_spiedino,              SIGNAL( foundEndDataBlock() )                 , this, SLOT( unBlockSpiedoInterface())               );
+  connect( m_spiedino,              SIGNAL( readyPerCentLine(int,double,double) ) , this, SLOT( updateDisplay(int,double,double) )      );
+  connect( this,                    SIGNAL( unBlockingSpiedoInterface()  )        , this, SLOT( unBlockSpiedoInterface() )         );
+  connect( this,                    SIGNAL( blockingSpiedoInterface()  )          , this, SLOT( blockSpiedoInterface() )           );
+
+  if( isAllConnect ){
+    emit enableControl();
+  }else{
+    isAllConnect = true;
+  }
+  emit unBlockingSpiedoInterface();
 
 }
 
@@ -88,6 +109,7 @@ void MainWindow::connectCounterino(Counterino* counterinoSelected)
 //     
 //   }
   int ErrorCode= counterinoSelected->initialize();
+  sm_streamlog << "ErrorCode: "<< ErrorCode << endl;
   if( ErrorCode != 0 ){
     sm_streamlog << "COUNTER ERROR: " << ErrorCode << endl;
     m_selectionReaderWindow->show();
@@ -97,7 +119,19 @@ void MainWindow::connectCounterino(Counterino* counterinoSelected)
   }
   
   m_counterino=counterinoSelected;
-  emit unBlockingInterface();
+  
+  if( isAllConnect ){
+    emit enableControl();
+  }else{
+    isAllConnect = true;
+  }
+  
+  
+  connect( this, SIGNAL( unBlockingCounterInterface()) , this,  SLOT( unBlockCounterInterface() )  );
+  connect( this, SIGNAL( blockingCounterInterface())    , this,  SLOT( blockCounterInterface() )    );
+  unBlockCounterInterface();
+  
+  
 
 }
 
@@ -111,7 +145,7 @@ void MainWindow::Scan()
 {        
         sm_streamlog << "Scanning" << endl;
 
-	emit blockingInterface();
+	emit blockingSpiedoInterface();
         m_scanByteCache.append("#").append( sm_datelog.toString("dd\\MM\\yyyy hh:mm:ss") ).append("\n");
 	m_scanByteCache.append("#Scanning on dutyCicle\n#duty\tmean\tsigma\n");
 
@@ -133,25 +167,33 @@ void MainWindow::Acquire()
 {
   sm_streamlog << "Acquire" << endl;
 
-//   emit blockingInterface();
-//   
-//   
-//   m_acquireByteCache.append("#").append( sm_datelog.toString("dd\\MM\\yyyy hh:mm:ss") ).append("\n");
-//   m_acquireByteCache.append("#Scanning on dutyCicle\n#duty\tmean\tsigma\n");
-//   
-//  
-//   int numberOfSample=m_ui->m_spinAcquire->value();
-//   m_acquireCache=m_spiedino->getAcquireCache();
+  emit blockingInterface();
   
-//   m_ui->m_plot->xAxis->setRange(0,100);
-//   m_ui->m_plot->xAxis->rescale();
-//   m_ui->m_plot->addGraph(0);
-//   m_ui->m_plot->graph(0)->setData(m_acquireCache->time,m_acquireCache->rawMeasure);
-//   m_ui->m_plot->replot();
   
-//   m_spiedino->acquire(numberOfSample);
+  m_acquireByteCache.append("#").append( sm_datelog.toString("dd\\MM\\yyyy hh:mm:ss") ).append("\n");
+  m_acquireByteCache.append("#Scanning on TIme\n#time\tRawMeasure\n");
   
-  m_counterino->start();
+ 
+  int numberOfSample=m_ui->m_spinAcquire->value();
+  m_acquireCache=m_spiedino->getAcquireCache();
+  
+  
+  /*m_ui->m_plot->xAxis->setRange(0,100);
+  m_ui->m_plot->xAxis->rescale();
+  m_ui->m_plot->addGraph(0);
+  m_ui->m_plot->graph(0)->setData(m_acquireCache->time,m_acquireCache->rawMeasure);
+  m_ui->m_plot->replot();
+ */ 
+  if( numberOfSample != 0 ){
+    m_spiedinoTimer=new QTimer();
+    m_spiedinoTimer->setInterval(numberOfSample*1000);
+    connect( m_spiedinoTimer, SIGNAL( timeout() ), this, SLOT( StopAcquire() ) ) ;
+    m_spiedinoTimer->start();
+    m_spiedino->acquire(0);
+  } else{
+    m_spiedino->acquire(0);
+  }
+  
   
 
 
@@ -159,9 +201,10 @@ void MainWindow::Acquire()
 
 void MainWindow::StopAcquire(){
  sm_streamlog << "Stop" << endl;
+ 
+ m_counterino->stop();
+ disconnect( m_spiedinoTimer, SIGNAL( timeout() ), this, SLOT( StopAcquire() ) ) ;
 
-
-m_counterino->stop();
 
 }
 
@@ -178,6 +221,38 @@ void MainWindow::WarmUp(){
 }
 
 
+void MainWindow::StartCount()
+{
+
+  emit blockCounterInterface();
+  m_counterinoTimer=new QTimer();
+  m_counterino->clear();
+  if( m_ui->spinTimeIntegration->value() != 0 ){
+    
+  
+  m_counterinoTimer->setInterval(m_ui->spinTimeIntegration->value()*1000);
+  connect( m_counterinoTimer, SIGNAL(timeout()) , this, SLOT(StopCount()) );
+  m_counterinoTimer->start();
+  }
+  m_counterino->start();
+}
+
+void MainWindow::StopCount()
+
+
+{
+ m_counterino->stop();
+ disconnect( m_counterinoTimer, SIGNAL(timeout()) , this, SLOT(StopCount()) );
+ 
+ m_ui->m_lcdCounter->display( m_counterino->getCount() );       
+ 
+ emit unBlockCounterInterface();
+}
+
+
+
+
+
 
 void MainWindow::m_close()        //FIXME: è possibile scriverlo intercettando il segnale;
 {
@@ -191,6 +266,15 @@ void MainWindow::m_close()        //FIXME: è possibile scriverlo intercettando 
 }
 
 
+
+
+
+
+
+
+
+
+// MENU
 void MainWindow::addReader()
 {
     sm_streamlog << "addReader" << endl;
@@ -233,29 +317,64 @@ void MainWindow::openControl()
 //___________________Interface Manager_____________
 void MainWindow::unBlockInterface()
 {
-      sm_streamlog << "unBlockInterface" << endl;
-
-   m_interfaceIsBlocked=false;
-   m_ui->m_acquireButton->setEnabled(true);
-   m_ui->m_setDutyButton->setEnabled(true);
-   m_ui->m_spinAcquire->setEnabled(true);
-   m_ui->m_autoButton->setEnabled(true);
-  // m_ui->m_stopButton->setEnabled(true);
-   
-   
+      
+  emit unBlockCounterInterface();
+  emit unBlockSpiedoInterface();
 }
 
 
 void MainWindow::blockInterface(){
-      sm_streamlog << "blockingInterface" << endl;
 
-  m_interfaceIsBlocked=true;
-  m_ui->m_acquireButton->setEnabled(false);
-  m_ui->m_setDutyButton->setEnabled(false);
-  m_ui->m_spinAcquire->setEnabled(false);
-  m_ui->m_autoButton->setEnabled(false);
-  //m_ui->m_stopButton->setEnabled(false);
+  emit blockCounterInterface();
+  emit blockSpiedoInterface();
+  
 }
+
+
+void MainWindow::blockCounterInterface()
+{
+
+  m_ui->m_startCounterButton->setEnabled(false);
+  
+}
+
+void MainWindow::blockSpiedoInterface()
+{
+
+  m_ui->m_setDutyButton->setEnabled(false);
+  m_ui->m_acquireButton->setEnabled(false);
+  m_ui->m_autoButton->setEnabled(false);
+  
+  
+}
+
+void MainWindow::unBlockCounterInterface()
+{
+
+  m_ui->m_startCounterButton->setEnabled(true);
+}
+
+
+void MainWindow::unBlockSpiedoInterface()
+{
+  m_ui->m_setDutyButton->setEnabled(true);
+  m_ui->m_acquireButton->setEnabled(true);
+  m_ui->m_autoButton->setEnabled(true);
+
+
+}
+
+
+void MainWindow::activeControl()
+{
+  m_controlWindows=new ControlWindows();
+  m_controlWindows->setDevices(m_spiedino, m_counterino);
+  int index=m_ui->tabWidget->addTab( m_controlWindows, QString("Controllo interferometro") );
+  
+}
+
+
+
 
 
 //___________________Update Thing_________________
@@ -278,7 +397,8 @@ void MainWindow::updateDisplay( int duty, double mean, double sigma )
   sm_streamlog << "updateDisplay" << endl;
   sm_streamlog << duty << ':' << mean << ':' << sigma << endl;
   m_ui->m_diodeLcd->display( int(mean) );
-  m_ui->m_diodeStatusBar->setValue( int(mean) );
+  
+  m_ui->actualDuty->setText(tr("Duty: %1").arg(duty));
    
 }
 

@@ -20,6 +20,7 @@
 
 #include "counterino.h"
 #include "spiedino.h"
+#include "ui_controlwindows.h"
 
 #include <qt5/QtWidgets/QWidget>
 
@@ -39,7 +40,7 @@ public:
   ControlWindows(const ControlWindows& other);
   ~ControlWindows();
   
-  void getDevices( Spiedino * spiedino, Counterino *counterino);
+  void setDevices( Spiedino * spiedino, Counterino *counterino);
 
   
 signals:

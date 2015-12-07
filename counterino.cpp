@@ -30,7 +30,7 @@ m_serialPort()
   serialPort.setParent(this);
   m_serialPort=&serialPort;
   
-  m_serialPort->setBaudRate(QSerialPort::Baud115200);
+  m_serialPort->setBaudRate(QSerialPort::Baud9600);
   m_serialPort->setDataBits(QSerialPort::Data8);
   m_serialPort->setParity(QSerialPort::NoParity);
   m_serialPort->setStopBits(QSerialPort::OneStop); 
@@ -42,7 +42,7 @@ Counterino::Counterino(const char* nameSerialPort, QObject* parent):
 QObject(parent),
 m_serialPort(new QSerialPort( QString( nameSerialPort ) ) )
 {
-  m_serialPort->setBaudRate(QSerialPort::Baud115200);
+  m_serialPort->setBaudRate(QSerialPort::Baud9600);
   m_serialPort->setDataBits(QSerialPort::Data8);
   m_serialPort->setParity(QSerialPort::NoParity);
   m_serialPort->setStopBits(QSerialPort::OneStop); 
@@ -55,7 +55,7 @@ QObject(parent),
 m_serialPort( new QSerialPort(nameSerialPort) )
 {
 
-  m_serialPort->setBaudRate(QSerialPort::Baud115200);
+  m_serialPort->setBaudRate(QSerialPort::Baud9600);
   m_serialPort->setDataBits(QSerialPort::Data8);
   m_serialPort->setParity(QSerialPort::NoParity);
   m_serialPort->setStopBits(QSerialPort::OneStop); 
@@ -85,20 +85,25 @@ Counterino::Counterino(const Counterino& other): QObject()
 
 int  Counterino::checkBuffer()
 {
-
+   
   if( m_serialPort ==0 || ! m_serialPort->isOpen() )
     return -1;
-  char buffer[10];
-  m_serialPort->read(buffer,10);
   
+  QTextStream streamOut(stdout);
+  char buffer[11];
+  while(m_serialPort->waitForReadyRead(1000)){}
+  m_serialPort->read(buffer,11);
+  buffer[10]='\0';
+  streamOut << "buffer: " << buffer << '|' << endl;
   // checkSum
   int tmp_checksum=0;
   for ( unsigned int i =0; i < 7;++i){
     tmp_checksum+=buffer[i];
+    streamOut << "tmp_checksum: " << tmp_checksum << endl;
   }
   char * check=&buffer[7];
-  if( tmp_checksum != atoi(check) ){
-   
+  if( tmp_checksum%256 != atoi(check)){
+   streamOut << "atoi(&buffer[1]): " << atoi(&buffer[1]) << endl;
    return atoi(&buffer[1]); 
   }
   
@@ -106,19 +111,23 @@ int  Counterino::checkBuffer()
   const char *NoErrorCode="%000000069";
   
   bool isErrorCode=0;
+  streamOut << "isErrorCode:NoErrorCode[i]:buffer[i]" << endl;
   for( int i=0; i< 10 ; ++i){
     isErrorCode+= ( NoErrorCode[i] != buffer[i]) ;
-  if( isErrorCode )
-    break;
+    streamOut << isErrorCode << ':' << NoErrorCode[i] << ':' << buffer[i] << endl;
+    if( isErrorCode )
+      break;
     
   }
-  
-  if( isErrorCode)
-    return atoi( &buffer[1]);
+  if( isErrorCode ){
+    streamOut << "atoi( &buffer[1])" << atoi( &buffer[1]) << endl;
+    return atoi( &buffer[1]); 
+  }
     
   return 0;
     
 }
+
 
 
 
@@ -132,16 +141,16 @@ int Counterino::initialize()
   
   m_serialPort->write("INIT\n");
   unsigned int ErrorCode=0;
-  if( ErrorCode = this->checkBuffer() != 0  )
+  if( ( ErrorCode = this->checkBuffer() )!= 0  )
     return -ErrorCode;
   
   
   m_serialPort->write("COMPUTER\n");
-  if( ErrorCode = this->checkBuffer() != 0  )
+  if( ( ErrorCode = this->checkBuffer() ) != 0  )
     return -ErrorCode;
   
   m_serialPort->write("ENABLE_REMOTE\n");
-  if( ErrorCode = this->checkBuffer() != 0  )
+  if( ( ErrorCode = this->checkBuffer() ) != 0  )
     return -ErrorCode;
   
   return 0;
@@ -185,14 +194,22 @@ int Counterino::stop()
 
 int Counterino::getCount()
 {
+  QTextStream streamOut(stdout);
   
+  streamOut << "getCount" << endl;
+  m_serialPort->readAll();
   m_serialPort->write("SHOW_COUNT\n");
-  char char_Counts[9];
-  m_serialPort->read(char_Counts,9);
-  QTextStream out(stdout);
-  out << char_Counts << endl;
+  m_serialPort->flush();
+  m_serialPort->clear();
+  char char_Counts[9];                  
+  
+  
+  while( m_serialPort->waitForReadyRead(1000) ){}
+  streamOut << m_serialPort->read(char_Counts,9) << endl;
+   
+  streamOut << "char_Counts: " << char_Counts << '|' << endl;
   char_Counts[8]='\0';
-  out << char_Counts << endl;
+  streamOut << "char_Counts: " << char_Counts << '|' << endl;
   unsigned counts=atoi(char_Counts);
   unsigned int ErrorCode=0;
   if( ErrorCode = this->checkBuffer() != 0  )
